@@ -1,23 +1,32 @@
 """
-routers/rnn.py — Tiny numpy RNN and LSTM
+routers/rnn.py — TinyRNN and TinyLSTM implemented in PyTorch.
 
-Architecture: character/word-level language model trained on the corpus.
+Architecture: word-level language model trained on the corpus.
 Pre-training: 500 epochs, seed=42, all 4 hidden_size variants cached at startup.
 
 Endpoints:
   GET /api/rnn/generate?hidden_size=8&start=word&words=5
-  GET /api/lstm/generate?hidden_size=8&start=word&words=5
+  GET /api/rnn/lstm/generate?hidden_size=8&start=word&words=5
+  GET /api/rnn/status
 """
 
-import numpy as np
-from fastapi import APIRouter, Query
-import sys
+import threading
+import pickle
 from pathlib import Path
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from fastapi import APIRouter, Query
+
+import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from corpus import TOKENS
 
 router = APIRouter()
+
+# ── Device ────────────────────────────────────────────────────────────────────
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ── Vocabulary ────────────────────────────────────────────────────────────────
 VOCAB = sorted(set(TOKENS))
@@ -28,236 +37,136 @@ V = len(VOCAB)
 HIDDEN_SIZES = [4, 8, 16, 32]
 N_EPOCHS = 500
 
-# ── Trained model cache ───────────────────────────────────────────────────────
-_rnn_cache: dict = {}   # {hidden_size: params}
+# ── Model cache ───────────────────────────────────────────────────────────────
+_rnn_cache: dict = {}
 _lstm_cache: dict = {}
 
 
-# ── Utilities ─────────────────────────────────────────────────────────────────
-def one_hot(idx: int, size: int) -> np.ndarray:
-    v = np.zeros((size, 1))
-    v[idx] = 1.0
-    return v
+# ── TinyRNN ───────────────────────────────────────────────────────────────────
+class TinyRNN(nn.Module):
+    def __init__(self, hidden_size: int):
+        super().__init__()
+        self.H    = hidden_size
+        self.cell = nn.RNNCell(V, hidden_size)
+        self.out  = nn.Linear(hidden_size, V)
 
-def softmax(x: np.ndarray) -> np.ndarray:
-    e = np.exp(x - x.max())
-    return e / e.sum()
+    def train_model(self, tokens: list[str], n_epochs: int):
+        idxs = torch.tensor(
+            [W2I[t] for t in tokens if t in W2I], dtype=torch.long, device=DEVICE
+        )
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-2)
+        criterion = nn.CrossEntropyLoss()
 
-def sample(probs: np.ndarray) -> int:
-    return int(np.random.choice(len(probs), p=probs.ravel()))
-
-
-# ── Tiny RNN ──────────────────────────────────────────────────────────────────
-class TinyRNN:
-    def __init__(self, hidden_size: int, seed: int = 42):
-        np.random.seed(seed)
-        H, V_ = hidden_size, V
-        self.Wxh = np.random.randn(H, V_) * 0.01
-        self.Whh = np.random.randn(H, H)  * 0.01
-        self.Why = np.random.randn(V_, H) * 0.01
-        self.bh  = np.zeros((H, 1))
-        self.by  = np.zeros((V_, 1))
-        self.H   = hidden_size
-
-    def forward(self, inputs, h_prev):
-        """inputs: list of one-hot (V,1). Returns hs, ys, ps."""
-        hs, ys, ps = {}, {}, {}
-        hs[-1] = h_prev.copy()
-        for t, x in enumerate(inputs):
-            hs[t] = np.tanh(self.Wxh @ x + self.Whh @ hs[t-1] + self.bh)
-            ys[t] = self.Why @ hs[t] + self.by
-            ps[t] = softmax(ys[t])
-        return hs, ys, ps
-
-    def loss_and_grads(self, inputs, targets, h_prev):
-        hs, ys, ps = self.forward(inputs, h_prev)
-        loss = sum(-np.log(ps[t][targets[t], 0] + 1e-8) for t in range(len(inputs)))
-
-        dWxh = np.zeros_like(self.Wxh)
-        dWhh = np.zeros_like(self.Whh)
-        dWhy = np.zeros_like(self.Why)
-        dbh  = np.zeros_like(self.bh)
-        dby  = np.zeros_like(self.by)
-        dh_next = np.zeros_like(hs[0])
-
-        for t in reversed(range(len(inputs))):
-            dy = ps[t].copy()
-            dy[targets[t]] -= 1
-            dWhy += dy @ hs[t].T
-            dby  += dy
-            dh = self.Why.T @ dy + dh_next
-            dh_raw = (1 - hs[t]**2) * dh
-            dbh  += dh_raw
-            dWxh += dh_raw @ inputs[t].T
-            dWhh += dh_raw @ hs[t-1].T
-            dh_next = self.Whh.T @ dh_raw
-
-        for g in [dWxh, dWhh, dWhy, dbh, dby]:
-            np.clip(g, -5, 5, out=g)
-
-        return loss, (dWxh, dWhh, dWhy, dbh, dby), hs[len(inputs)-1]
-
-    def train(self, tokens, n_epochs):
-        idxs = [W2I[t] for t in tokens if t in W2I]
-        inputs_idx  = idxs[:-1]
-        targets_idx = idxs[1:]
-
-        lr = 0.1
-        mWxh = np.zeros_like(self.Wxh); mWhh = np.zeros_like(self.Whh)
-        mWhy = np.zeros_like(self.Why); mbh  = np.zeros_like(self.bh)
-        mby  = np.zeros_like(self.by)
-
+        self.train()
         for _ in range(n_epochs):
-            h = np.zeros((self.H, 1))
-            inputs  = [one_hot(i, V) for i in inputs_idx]
-            targets = targets_idx
-            _, grads, h = self.loss_and_grads(inputs, targets, h)
-            dWxh, dWhh, dWhy, dbh, dby = grads
-            for param, dparam, mem in [
-                (self.Wxh, dWxh, mWxh), (self.Whh, dWhh, mWhh),
-                (self.Why, dWhy, mWhy), (self.bh, dbh, mbh), (self.by, dby, mby)
-            ]:
-                mem += dparam**2
-                param -= lr * dparam / (np.sqrt(mem) + 1e-8)
+            optimizer.zero_grad()
+            h = torch.zeros(1, self.H, device=DEVICE)
+            loss = torch.tensor(0.0, device=DEVICE)
+            for t in range(len(idxs) - 1):
+                x = F.one_hot(idxs[t].unsqueeze(0), V).float()
+                h = self.cell(x, h)
+                logits = self.out(h)
+                loss = loss + criterion(logits, idxs[t + 1].unsqueeze(0))
+            loss.backward()
+            nn.utils.clip_grad_norm_(self.parameters(), 5.0)
+            optimizer.step()
+        self.eval()
 
     def generate(self, start_idx: int, n: int, seed: int) -> list[int]:
-        np.random.seed(seed)
-        h = np.zeros((self.H, 1))
-        x = one_hot(start_idx, V)
+        torch.manual_seed(seed)
         result = []
-        for _ in range(n):
-            h = np.tanh(self.Wxh @ x + self.Whh @ h + self.bh)
-            y = self.Why @ h + self.by
-            p = softmax(y)
-            idx = sample(p)
-            result.append(idx)
-            x = one_hot(idx, V)
+        with torch.no_grad():
+            h = torch.zeros(1, self.H, device=DEVICE)
+            x = F.one_hot(torch.tensor([start_idx], device=DEVICE), V).float()
+            for _ in range(n):
+                h = self.cell(x, h)
+                logits = self.out(h)
+                probs = F.softmax(logits, dim=-1)
+                idx = torch.multinomial(probs, 1).item()
+                result.append(idx)
+                x = F.one_hot(torch.tensor([idx], device=DEVICE), V).float()
         return result
 
 
-# ── Tiny LSTM ─────────────────────────────────────────────────────────────────
-class TinyLSTM:
-    def __init__(self, hidden_size: int, seed: int = 42):
-        np.random.seed(seed)
-        H, V_ = hidden_size, V
-        scale = 0.01
-        # Gates: f, i, g, o
-        self.Wf = np.random.randn(H, V_+H) * scale; self.bf = np.zeros((H, 1))
-        self.Wi = np.random.randn(H, V_+H) * scale; self.bi = np.zeros((H, 1))
-        self.Wg = np.random.randn(H, V_+H) * scale; self.bg = np.zeros((H, 1))
-        self.Wo = np.random.randn(H, V_+H) * scale; self.bo = np.zeros((H, 1))
-        self.Wy = np.random.randn(V_, H)   * scale; self.by = np.zeros((V_, 1))
-        self.H  = hidden_size
+# ── TinyLSTM ──────────────────────────────────────────────────────────────────
+class TinyLSTM(nn.Module):
+    def __init__(self, hidden_size: int):
+        super().__init__()
+        self.H    = hidden_size
+        self.cell = nn.LSTMCell(V, hidden_size)
+        self.out  = nn.Linear(hidden_size, V)
 
-    def _step(self, x, h, c):
-        xh = np.vstack([x, h])
-        f = 1 / (1 + np.exp(-(self.Wf @ xh + self.bf)))
-        i = 1 / (1 + np.exp(-(self.Wi @ xh + self.bi)))
-        g = np.tanh(self.Wg @ xh + self.bg)
-        o = 1 / (1 + np.exp(-(self.Wo @ xh + self.bo)))
-        c_new = f * c + i * g
-        h_new = o * np.tanh(c_new)
-        return h_new, c_new
+    def train_model(self, tokens: list[str], n_epochs: int):
+        idxs = torch.tensor(
+            [W2I[t] for t in tokens if t in W2I], dtype=torch.long, device=DEVICE
+        )
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-2)
+        criterion = nn.CrossEntropyLoss()
 
-    def train(self, tokens, n_epochs):
-        idxs = [W2I[t] for t in tokens if t in W2I]
-        lr = 0.05
-        # Adagrad for all parameters
-        params = [self.Wf, self.bf, self.Wi, self.bi,
-                  self.Wg, self.bg, self.Wo, self.bo, self.Wy, self.by]
-        mems = [np.zeros_like(p) for p in params]
-
+        self.train()
         for _ in range(n_epochs):
-            h = np.zeros((self.H, 1))
-            c = np.zeros((self.H, 1))
-            loss = 0.0
-            # Simplified BPTT with finite differences for brevity
-            # (full LSTM BPTT is very verbose — use numerical gradient)
+            optimizer.zero_grad()
+            h = torch.zeros(1, self.H, device=DEVICE)
+            c = torch.zeros(1, self.H, device=DEVICE)
+            loss = torch.tensor(0.0, device=DEVICE)
             for t in range(len(idxs) - 1):
-                x = one_hot(idxs[t], V)
-                h, c = self._step(x, h, c)
-                y = self.Wy @ h + self.by
-                p = softmax(y)
-                loss -= np.log(p[idxs[t+1], 0] + 1e-8)
-
-            # Numerical gradient (slow but correct for tiny model)
-            eps = 1e-4
-            for pi, param in enumerate(params):
-                flat = param.ravel()
-                grad_flat = np.zeros_like(flat)
-                for j in range(min(len(flat), 20)):  # sample subset for speed
-                    orig = flat[j]
-                    flat[j] = orig + eps
-                    l_plus = self._eval_loss(idxs)
-                    flat[j] = orig - eps
-                    l_minus = self._eval_loss(idxs)
-                    flat[j] = orig
-                    grad_flat[j] = (l_plus - l_minus) / (2 * eps)
-                grad = grad_flat.reshape(param.shape)
-                np.clip(grad, -5, 5, out=grad)
-                mems[pi] += grad**2
-                param -= lr * grad / (np.sqrt(mems[pi]) + 1e-8)
-
-    def _eval_loss(self, idxs):
-        h = np.zeros((self.H, 1))
-        c = np.zeros((self.H, 1))
-        loss = 0.0
-        for t in range(len(idxs) - 1):
-            x = one_hot(idxs[t], V)
-            h, c = self._step(x, h, c)
-            y = self.Wy @ h + self.by
-            p = softmax(y)
-            loss -= np.log(p[idxs[t+1], 0] + 1e-8)
-        return loss
+                x = F.one_hot(idxs[t].unsqueeze(0), V).float()
+                h, c = self.cell(x, (h, c))
+                logits = self.out(h)
+                loss = loss + criterion(logits, idxs[t + 1].unsqueeze(0))
+            loss.backward()
+            nn.utils.clip_grad_norm_(self.parameters(), 5.0)
+            optimizer.step()
+        self.eval()
 
     def generate(self, start_idx: int, n: int, seed: int) -> list[int]:
-        np.random.seed(seed)
-        h = np.zeros((self.H, 1))
-        c = np.zeros((self.H, 1))
-        x = one_hot(start_idx, V)
+        torch.manual_seed(seed)
         result = []
-        for _ in range(n):
-            h, c = self._step(x, h, c)
-            y = self.Wy @ h + self.by
-            p = softmax(y)
-            idx = sample(p)
-            result.append(idx)
-            x = one_hot(idx, V)
+        with torch.no_grad():
+            h = torch.zeros(1, self.H, device=DEVICE)
+            c = torch.zeros(1, self.H, device=DEVICE)
+            x = F.one_hot(torch.tensor([start_idx], device=DEVICE), V).float()
+            for _ in range(n):
+                h, c = self.cell(x, (h, c))
+                logits = self.out(h)
+                probs = F.softmax(logits, dim=-1)
+                idx = torch.multinomial(probs, 1).item()
+                result.append(idx)
+                x = F.one_hot(torch.tensor([idx], device=DEVICE), V).float()
         return result
 
 
 # ── Model loading / pre-training ──────────────────────────────────────────────
-import threading
-import pickle
-from pathlib import Path
-
 _models_ready = threading.Event()
-_MODELS_FILE = Path(__file__).parent.parent / "models" / "rnn_models.pkl"
+_MODELS_FILE = Path(__file__).parent.parent / "models" / "rnn_models.pt"
 
 
 def _load_from_file():
-    """Loads pre-trained models from file (instant)."""
-    with open(_MODELS_FILE, "rb") as f:
-        data = pickle.load(f)
-    _rnn_cache.update(data["rnn"])
-    _lstm_cache.update(data["lstm"])
-    print(f"[RNN/LSTM] Loaded pretrained models from {_MODELS_FILE}")
+    data = torch.load(_MODELS_FILE, map_location=DEVICE, weights_only=True)
+    for hs, sd in data["rnn"].items():
+        m = TinyRNN(hs).to(DEVICE)
+        m.load_state_dict(sd)
+        m.eval()
+        _rnn_cache[hs] = m
+    for hs, sd in data["lstm"].items():
+        m = TinyLSTM(hs).to(DEVICE)
+        m.load_state_dict(sd)
+        m.eval()
+        _lstm_cache[hs] = m
+    print(f"[RNN/LSTM] Loaded pretrained models from {_MODELS_FILE} (device={DEVICE})")
     _models_ready.set()
 
 
 def _pretrain_all():
-    """Trains models from scratch (takes several minutes)."""
-    print("[RNN] Pretraining models (no cache file found)...")
+    print(f"[RNN/LSTM] Training from scratch on device={DEVICE}...")
     for hs in HIDDEN_SIZES:
-        m = TinyRNN(hs)
-        m.train(TOKENS, N_EPOCHS)
+        m = TinyRNN(hs).to(DEVICE)
+        m.train_model(TOKENS, N_EPOCHS)
         _rnn_cache[hs] = m
         print(f"  RNN hidden={hs} done")
-
-    print("[LSTM] Pretraining models...")
     for hs in HIDDEN_SIZES:
-        m = TinyLSTM(hs)
-        m.train(TOKENS, N_EPOCHS)
+        m = TinyLSTM(hs).to(DEVICE)
+        m.train_model(TOKENS, N_EPOCHS)
         _lstm_cache[hs] = m
         print(f"  LSTM hidden={hs} done")
     print("[RNN/LSTM] All models ready.")
@@ -265,9 +174,8 @@ def _pretrain_all():
 
 
 def start_pretraining():
-    """Loads models from file or trains in background. Called from FastAPI startup."""
+    """Load from .pt file or train in background. Called from FastAPI startup."""
     if _MODELS_FILE.exists():
-        # Load quickly from pickle — no background thread needed
         _load_from_file()
     else:
         print(f"[RNN/LSTM] No cache at {_MODELS_FILE}, training in background...")
@@ -292,8 +200,7 @@ def _generate_response(cache, hidden_size, start, words, seed):
     if model is None:
         return {"error": f"hidden_size={hidden_size} not cached"}
 
-    start_idx = W2I[start]
-    indices = model.generate(start_idx, words, seed)
+    indices = model.generate(W2I[start], words, seed)
     generated = [I2W[i] for i in indices]
 
     return {
@@ -312,7 +219,7 @@ def rnn_status():
 @router.get("/generate")
 def rnn_generate(
     hidden_size: int = Query(8, ge=4, le=32),
-    start: str = Query("железо"),
+    start: str = Query("кот"),
     words: int = Query(5, ge=1, le=20),
     seed: int = Query(42),
 ):
@@ -322,7 +229,7 @@ def rnn_generate(
 @router.get("/lstm/generate")
 def lstm_generate(
     hidden_size: int = Query(8, ge=4, le=32),
-    start: str = Query("железо"),
+    start: str = Query("кот"),
     words: int = Query(5, ge=1, le=20),
     seed: int = Query(42),
 ):

@@ -231,7 +231,7 @@ def test_ngram_corpus_displayed(page, server):
     page.wait_for_load_state("networkidle")
     corpus_block = page.locator(".corpus-block")
     assert corpus_block.count() >= 1
-    assert "железо" in corpus_block.first.inner_text()
+    assert "кот" in corpus_block.first.inner_text()
 
 # === Step 5: RNN ===
 def test_rnn_page_loads(page, server):

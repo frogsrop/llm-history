@@ -1,29 +1,32 @@
 """
-pretrain_models.py — one-time training of RNN/LSTM models.
+pretrain_models.py — one-time training of RNN/LSTM models (PyTorch).
 
 Usage:
   python pretrain_models.py
 
-Saves trained models to models/rnn_models.pkl (~1 MB).
+Saves trained models to models/rnn_models.pt.
 Re-running overwrites the file.
 """
 
-import pickle
 import time
 from pathlib import Path
+
+import torch
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
 from corpus import TOKENS
-from routers.rnn import TinyRNN, TinyLSTM, HIDDEN_SIZES, N_EPOCHS, W2I
+from routers.rnn import TinyRNN, TinyLSTM, HIDDEN_SIZES, N_EPOCHS, W2I, DEVICE
 
 MODELS_DIR = Path(__file__).parent / "models"
-MODELS_FILE = MODELS_DIR / "rnn_models.pkl"
+MODELS_FILE = MODELS_DIR / "rnn_models.pt"
 
 
 def pretrain():
     MODELS_DIR.mkdir(exist_ok=True)
+    print(f"[pretrain] Device: {DEVICE}")
+
     rnn_cache = {}
     lstm_cache = {}
 
@@ -31,24 +34,23 @@ def pretrain():
     t0 = time.time()
     for hs in HIDDEN_SIZES:
         t = time.time()
-        m = TinyRNN(hs)
-        m.train(TOKENS, N_EPOCHS)
-        rnn_cache[hs] = m
+        m = TinyRNN(hs).to(DEVICE)
+        m.train_model(TOKENS, N_EPOCHS)
+        rnn_cache[hs] = m.state_dict()
         print(f"  RNN hidden={hs} done ({time.time()-t:.1f}s)")
 
     print(f"[pretrain] Training {len(HIDDEN_SIZES)} LSTM models...")
     for hs in HIDDEN_SIZES:
         t = time.time()
-        m = TinyLSTM(hs)
-        m.train(TOKENS, N_EPOCHS)
-        lstm_cache[hs] = m
+        m = TinyLSTM(hs).to(DEVICE)
+        m.train_model(TOKENS, N_EPOCHS)
+        lstm_cache[hs] = m.state_dict()
         print(f"  LSTM hidden={hs} done ({time.time()-t:.1f}s)")
 
     print(f"[pretrain] Total training time: {time.time()-t0:.1f}s")
     print(f"[pretrain] Saving to {MODELS_FILE}...")
 
-    with open(MODELS_FILE, "wb") as f:
-        pickle.dump({"rnn": rnn_cache, "lstm": lstm_cache}, f)
+    torch.save({"rnn": rnn_cache, "lstm": lstm_cache}, MODELS_FILE)
 
     print(f"[pretrain] Done! File size: {MODELS_FILE.stat().st_size // 1024} KB")
 

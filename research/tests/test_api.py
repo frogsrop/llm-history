@@ -34,7 +34,7 @@ def test_ngram_table_trigram(client):
     assert "table" in data
 
 def test_ngram_generate_returns_words(client):
-    r = client.get("/api/ngram/generate?order=2&start=железо&words=5")
+    r = client.get("/api/ngram/generate?order=2&start=кот&words=5")
     assert r.status_code == 200
     data = r.json()
     assert "words" in data
@@ -74,35 +74,35 @@ def test_ngram_table_out_of_range(client):
 
 def test_ngram_seed_fixed_reproducible(client):
     """Fixed seed produces the same result on repeated calls."""
-    r1 = client.get("/api/ngram/generate?order=2&start=железо&words=5&seed=42")
-    r2 = client.get("/api/ngram/generate?order=2&start=железо&words=5&seed=42")
+    r1 = client.get("/api/ngram/generate?order=2&start=кот&words=5&seed=42")
+    r2 = client.get("/api/ngram/generate?order=2&start=кот&words=5&seed=42")
     assert r1.json()["words"] == r2.json()["words"]
 
 def test_ngram_seed_minus1_random(client):
     """seed=-1 produces different results across calls (on average)."""
     results = set()
     for _ in range(5):
-        r = client.get("/api/ngram/generate?order=1&start=железо&words=5&seed=-1")
+        r = client.get("/api/ngram/generate?order=1&start=кот&words=5&seed=-1")
         results.add(tuple(r.json()["words"]))
     # at least 2 distinct results out of 5 attempts
     assert len(results) >= 2, "seed=-1 should produce different results"
 
 def test_ngram_words_max_10(client):
-    """Generate up to 10 words."""
-    r = client.get("/api/ngram/generate?order=2&start=железо&words=10&seed=42")
+    """Generate up to 10 words (may stop early at sentence boundary)."""
+    r = client.get("/api/ngram/generate?order=2&start=кот&words=10&seed=42")
     assert r.status_code == 200
-    assert len(r.json()["words"]) == 10
+    assert 1 <= len(r.json()["words"]) <= 10
 
 def test_ngram_words_min_1(client):
     """Generate 1 word."""
-    r = client.get("/api/ngram/generate?order=2&start=железо&words=1&seed=42")
+    r = client.get("/api/ngram/generate?order=2&start=кот&words=1&seed=42")
     assert r.status_code == 200
     assert len(r.json()["words"]) == 1
 
 
 # --- RNN API (Step 5) ---
 def test_rnn_generate_returns_words(client):
-    r = client.get("/api/rnn/generate?hidden_size=8&start=железо&words=5")
+    r = client.get("/api/rnn/generate?hidden_size=8&start=кот&words=5")
     assert r.status_code == 200
     data = r.json()
     assert "words" in data
@@ -110,7 +110,7 @@ def test_rnn_generate_returns_words(client):
     assert len(data["words"]) == 5
 
 def test_lstm_generate_returns_words(client):
-    r = client.get("/api/rnn/lstm/generate?hidden_size=8&start=железо&words=5")
+    r = client.get("/api/rnn/lstm/generate?hidden_size=8&start=кот&words=5")
     assert r.status_code == 200
     data = r.json()
     assert "words" in data
@@ -118,12 +118,12 @@ def test_lstm_generate_returns_words(client):
 
 def test_rnn_hidden_sizes(client):
     for hs in [4, 8, 16, 32]:
-        r = client.get(f"/api/rnn/generate?hidden_size={hs}&start=железо&words=3")
+        r = client.get(f"/api/rnn/generate?hidden_size={hs}&start=кот&words=3")
         assert r.status_code == 200, f"hidden_size={hs} returned {r.status_code}"
 
 def test_lstm_hidden_sizes(client):
     for hs in [4, 8, 16, 32]:
-        r = client.get(f"/api/rnn/lstm/generate?hidden_size={hs}&start=железо&words=3")
+        r = client.get(f"/api/rnn/lstm/generate?hidden_size={hs}&start=кот&words=3")
         assert r.status_code == 200, f"hidden_size={hs} returned {r.status_code}"
 
 def test_rnn_words_in_vocab(client):
@@ -133,7 +133,7 @@ def test_rnn_words_in_vocab(client):
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from corpus import TOKENS
     vocab = set(TOKENS)
-    r = client.get("/api/rnn/generate?hidden_size=8&start=железо&words=5")
+    r = client.get("/api/rnn/generate?hidden_size=8&start=кот&words=5")
     for w in r.json()["words"]:
         assert w in vocab, f"Word '{w}' is not from the corpus"
 
