@@ -235,6 +235,26 @@
     let _graphTable = null;
     let _graphN = 2;
 
+    const LS_KEY = 'ngram_graph_state';
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return { userPos: {}, graphPan: {}, edgeControlPts: {} };
+        return JSON.parse(raw);
+      } catch { return { userPos: {}, graphPan: {}, edgeControlPts: {} }; }
+    }
+
+    function saveState() {
+      try { localStorage.setItem(LS_KEY, JSON.stringify({ userPos, graphPan, edgeControlPts })); }
+      catch {}
+    }
+
+    const _state = loadState();
+    let userPos        = _state.userPos        || {};
+    let graphPan       = _state.graphPan       || {};
+    let edgeControlPts = _state.edgeControlPts || {};
+
     function renderFullGraph(table, n, selectedCtx) {
       _graphTable = table;
       _graphN = n;
@@ -245,48 +265,16 @@
       // All positions are in this coordinate space; browser scales to fill panel
       const VCX = 500, VCY = 500;
 
-      // ── Unigram: frequency bubbles in a circle ──
-      if (n === 1) {
-        const nexts = Object.entries(table["*"] || {}).sort((a,b) => b[1]-a[1]);
-        const count = nexts.length;
-        const NR = 55;
-        const rl = Math.max(180, count * (NR * 2 + 12) / (2 * Math.PI));
-        const SZ = Math.round((rl + NR + 30) * 2);
-        const cx = SZ / 2, cy = SZ / 2;
-
-        let nodesSvg = '';
-        nexts.forEach(([word, prob], i) => {
-          const angle = (2 * Math.PI * i / count) - Math.PI / 2;
-          const x = (cx + rl * Math.cos(angle)).toFixed(1);
-          const y = (cy + rl * Math.sin(angle)).toFixed(1);
-          const r = Math.round(28 + prob * 110);
-          const op = (0.12 + prob * 0.55).toFixed(2);
-          const lbl = word.length > 8 ? word.slice(0,7)+'…' : word;
-          nodesSvg += `
-            <circle cx="${x}" cy="${y}" r="${r}"
-              fill="rgba(74,158,255,${op})" stroke="#4a9eff" stroke-width="3"/>
-            <text x="${x}" y="${(parseFloat(y)-6).toFixed(1)}" text-anchor="middle"
-              font-size="26" font-weight="700" fill="#e8eaf0" style="pointer-events:none">${lbl}</text>
-            <text x="${x}" y="${(parseFloat(y)+22).toFixed(1)}" text-anchor="middle"
-              font-size="22" fill="#4a9eff" style="pointer-events:none">${(prob*100).toFixed(0)}%</text>`;
-        });
-        panel.innerHTML = `
-          <div class="graph-panel-title">Unigram — частоты слов</div>
-          <svg viewBox="0 0 ${SZ} ${SZ}" xmlns="http://www.w3.org/2000/svg"
-               style="flex:1;width:100%;height:100%;" preserveAspectRatio="xMidYMid meet">
-            ${nodesSvg}
-          </svg>`;
-        return;
-      }
-
-      // ── N≥2: full directed Markov graph ──────────────────────
+      // ── N≥1: full directed Markov graph (N=1 → nodes only, no edges) ──
       const nodeSet = new Set();
       const allEdges = [];
+      const nodeFreq = {}; // N=1: word → probability
       Object.entries(table).forEach(([ctx, nexts]) => {
-        nodeSet.add(ctx);
+        if (n > 1) nodeSet.add(ctx);
         Object.entries(nexts).forEach(([word, prob]) => {
           nodeSet.add(word);
-          allEdges.push({ from: ctx, to: word, prob, ctx });
+          if (n > 1) allEdges.push({ from: ctx, to: word, prob, ctx });
+          else nodeFreq[word] = prob;
         });
       });
 
@@ -328,23 +316,27 @@
       // Build adjacency set for fast lookup
       const edgeSet = new Set(allEdges.map(e => e.from + '→' + e.to));
 
-      const ITERS = 250;
+      const ITERS = 350;
       for (let iter = 0; iter < ITERS; iter++) {
         const t = Math.max(2, K * (1 - iter / ITERS)); // temperature (cooling)
 
-        // Repulsion: every pair of nodes pushes apart
+        // Repulsion: every pair of nodes pushes apart (rect-aware effective distance)
         for (let i = 0; i < nodeArr.length; i++) {
           for (let j = i + 1; j < nodeArr.length; j++) {
             const a = nodeArr[i], b = nodeArr[j];
             const dx = pos[a].x - pos[b].x;
             const dy = pos[a].y - pos[b].y;
-            const d2 = dx * dx + dy * dy || 0.01;
-            const d  = Math.sqrt(d2);
-            const f  = (K * K) / d2;     // Coulomb: inversely proportional to d²
-            vel[a].x += dx / d * f;
-            vel[a].y += dy / d * f;
-            vel[b].x -= dx / d * f;
-            vel[b].y -= dy / d * f;
+            const d  = Math.sqrt(dx * dx + dy * dy) || 0.01;
+            const nx = dx / d, ny = dy / d;
+            // Effective "radius" of each rect in the direction (nx,ny)
+            const ra = Math.min(Math.abs(nx) > 1e-6 ? nodeRW[a] / Math.abs(nx) : Infinity, Math.abs(ny) > 1e-6 ? RH / Math.abs(ny) : Infinity);
+            const rb = Math.min(Math.abs(nx) > 1e-6 ? nodeRW[b] / Math.abs(nx) : Infinity, Math.abs(ny) > 1e-6 ? RH / Math.abs(ny) : Infinity);
+            const dEff = Math.max(1, d - ra - rb - 18); // desired gap 18px between borders
+            const f  = (K * K) / (dEff * dEff);
+            vel[a].x += nx * f;
+            vel[a].y += ny * f;
+            vel[b].x -= nx * f;
+            vel[b].y -= ny * f;
           }
         }
 
@@ -360,6 +352,39 @@
           vel[to].y   -= dy / d * f;
         });
 
+        // Edge-node repulsion: push non-endpoint nodes away from edge paths
+        allEdges.forEach(({ from, to }) => {
+          const p1 = pos[from], p2 = pos[to];
+          const edx = p2.x - p1.x, edy = p2.y - p1.y;
+          const eLen2 = edx * edx + edy * edy || 0.01;
+          nodeArr.forEach(id => {
+            if (id === from || id === to) return;
+            const N = pos[id];
+            const t = ((N.x - p1.x) * edx + (N.y - p1.y) * edy) / eLen2;
+            if (t <= 0.05 || t >= 0.95) return; // near endpoints — handled by node-node repulsion
+            const cx = p1.x + t * edx, cy = p1.y + t * edy;
+            const perpDx = N.x - cx, perpDy = N.y - cy;
+            const perpDist = Math.sqrt(perpDx * perpDx + perpDy * perpDy);
+            const minDist = nodeRW[id] + RH + 22;
+            if (perpDist >= minDist) return;
+            let nx, ny;
+            if (perpDist < 0.5) { // exactly on edge: push perpendicular to edge direction
+              nx = -edy / Math.sqrt(eLen2); ny = edx / Math.sqrt(eLen2);
+            } else {
+              nx = perpDx / perpDist; ny = perpDy / perpDist;
+            }
+            const f = (minDist - perpDist) * 1.8;
+            // Push the intermediate node away from the edge
+            vel[id].x += nx * f;
+            vel[id].y += ny * f;
+            // Also nudge edge endpoints in opposite direction so the edge routes around
+            vel[from].x -= nx * f * 0.25;
+            vel[from].y -= ny * f * 0.25;
+            vel[to].x   -= nx * f * 0.25;
+            vel[to].y   -= ny * f * 0.25;
+          });
+        });
+
         // Apply velocities with temperature cap + centre gravity
         nodeArr.forEach(id => {
           const v = vel[id];
@@ -372,6 +397,36 @@
           pos[id].y += v.y / speed * capped;
           vel[id]    = { x: 0, y: 0 };
         });
+      }
+
+      // ── Post-simulation: resolve remaining rectangle overlaps ──
+      for (let pass = 0; pass < 40; pass++) {
+        let moved = false;
+        for (let i = 0; i < nodeArr.length; i++) {
+          for (let j = i + 1; j < nodeArr.length; j++) {
+            const a = nodeArr[i], b = nodeArr[j];
+            const dx = pos[a].x - pos[b].x;
+            const dy = pos[a].y - pos[b].y;
+            const minX = nodeRW[a] + nodeRW[b] + 16;
+            const minY = RH * 2 + 12;
+            const ovX = minX - Math.abs(dx);
+            const ovY = minY - Math.abs(dy);
+            if (ovX > 0 && ovY > 0) {
+              moved = true;
+              // Push along the axis with smaller relative overlap
+              if (ovX / minX < ovY / minY) {
+                const push = ovX / 2 + 1;
+                pos[a].x += dx >= 0 ? push : -push;
+                pos[b].x -= dx >= 0 ? push : -push;
+              } else {
+                const push = ovY / 2 + 1;
+                pos[a].y += dy >= 0 ? push : -push;
+                pos[b].y -= dy >= 0 ? push : -push;
+              }
+            }
+          }
+        }
+        if (!moved) break;
       }
 
       // ── Normalise: stretch positions to fill SZ with padding ──
@@ -390,6 +445,13 @@
         pos[id].x = pos[id].x * scale + offX;
         pos[id].y = pos[id].y * scale + offY;
       });
+
+      // Apply user drag overrides (preserved across selectedCtx changes within same n)
+      nodeArr.forEach(id => {
+        const saved = userPos[`${n}:${id}`];
+        if (saved) { pos[id].x = saved.x; pos[id].y = saved.y; }
+      });
+      const livePos = pos; // shared reference updated live during drag
 
       // Find where a line from (cx,cy) in direction (nx,ny) exits the rectangle border
       function rectBorder(px, py, nx, ny, hw, hh, margin) {
@@ -416,7 +478,7 @@
         </filter>
       </defs>`;
 
-      let edgesSvg = '';
+      let edgesSvg = '', cpSvg = '';
       const sorted = [...allEdges].sort((a,b) =>
         (a.ctx === selectedCtx ? 1 : 0) - (b.ctx === selectedCtx ? 1 : 0));
 
@@ -431,7 +493,7 @@
           const color = isSel ? '#ffffff' : '#4a9eff';
           const op    = isSel ? 1 : (0.35 + prob * 0.65).toFixed(2);
           edgesSvg += `
-            <ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="24" ry="18"
+            <ellipse data-selfloop="${from}" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="24" ry="18"
               fill="none" stroke="${color}" stroke-width="${isSel ? 4 : 2}" opacity="${op}"/>
             <text x="${lx.toFixed(1)}" y="${(ly - 24).toFixed(1)}" text-anchor="middle"
               font-size="${fsize - 6}" fill="${color}" opacity="${op}"
@@ -445,9 +507,11 @@
 
         // Perpendicular curve offset (based on center-to-center for orientation)
         const perp = 38;
-        // Step 1: estimate control point from center midpoint
-        const emx = (p1.x + p2.x) / 2 - ny * perp;
-        const emy = (p1.y + p2.y) / 2 + nx * perp;
+        const cpKey = `${n}:${from}||${to}`;
+        const storedCP = edgeControlPts[cpKey];
+        // Step 1: estimate control point (use stored if available)
+        const emx = storedCP ? storedCP.x : (p1.x + p2.x) / 2 - ny * perp;
+        const emy = storedCP ? storedCP.y : (p1.y + p2.y) / 2 + nx * perp;
         // Step 2: actual curve departure/approach directions
         const sdx = emx - p1.x, sdy = emy - p1.y;
         const sd = Math.sqrt(sdx*sdx + sdy*sdy) || 1;
@@ -456,9 +520,9 @@
         // Step 3: border points using actual curve directions
         const s  = rectBorder(p1.x, p1.y,  sdx/sd,  sdy/sd, nodeRW[from], RH, 0);
         const e  = rectBorder(p2.x, p2.y, -adx/ad, -ady/ad, nodeRW[to],   RH, 2);
-        // Step 4: final control point from corrected border points
-        const mx = (s.x + e.x) / 2 - ny * perp;
-        const my = (s.y + e.y) / 2 + nx * perp;
+        // Step 4: final control point
+        const mx = storedCP ? storedCP.x : (s.x + e.x) / 2 - ny * perp;
+        const my = storedCP ? storedCP.y : (s.y + e.y) / 2 + nx * perp;
 
         const color = isSel ? '#ffffff' : '#4a9eff';
         const op    = isSel ? 1   : (0.3 + prob * 0.7).toFixed(2);
@@ -467,54 +531,296 @@
         const ly = Math.round((s.y + 2*my + e.y) / 4) - 12;
 
         edgesSvg += `
-          <path d="M${s.x.toFixed(1)},${s.y.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${e.x.toFixed(1)},${e.y.toFixed(1)}"
+          <path data-from="${from}" data-to="${to}"
+            d="M${s.x.toFixed(1)},${s.y.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${e.x.toFixed(1)},${e.y.toFixed(1)}"
             fill="none" stroke="${color}" stroke-width="${sw}" opacity="${op}"
             marker-end="url(#${isSel ? 'marr-hi' : 'marr'})"/>
-          <text x="${lx}" y="${ly}" text-anchor="middle"
+          <text data-elabel="${from}||${to}" x="${lx}" y="${ly}" text-anchor="middle"
             font-size="${fsize - 6}" font-weight="600" fill="${color}" opacity="${op}"
             style="pointer-events:none">${(prob*100).toFixed(0)}%</text>`;
+        // Point ON the curve at t=0.5
+        const cmx = (s.x + 2*mx + e.x) / 4, cmy = (s.y + 2*my + e.y) / 4;
+        cpSvg += `<circle class="edge-cp" data-edge="${from}||${to}"
+          data-sx="${s.x.toFixed(2)}" data-sy="${s.y.toFixed(2)}"
+          data-ex="${e.x.toFixed(2)}" data-ey="${e.y.toFixed(2)}"
+          cx="${cmx.toFixed(1)}" cy="${cmy.toFixed(1)}" r="10"
+          fill="rgba(74,158,255,${storedCP ? 0.6 : 0.12})"
+          stroke="rgba(74,158,255,${storedCP ? 0.9 : 0.35})" stroke-width="1.5"
+          style="cursor:crosshair"/>
+        <circle class="edge-cp" data-edge="${from}||${to}"
+          data-sx="${s.x.toFixed(2)}" data-sy="${s.y.toFixed(2)}"
+          data-ex="${e.x.toFixed(2)}" data-ey="${e.y.toFixed(2)}"
+          cx="${cmx.toFixed(1)}" cy="${cmy.toFixed(1)}" r="22"
+          fill="transparent" stroke="none" style="cursor:crosshair"/>`;
       });
 
       let nodesSvg = '';
       nodeArr.forEach(id => {
         const { x, y } = pos[id];
-        const isCtx = table[id] !== undefined;
+        const isCtx = n > 1 && table[id] !== undefined;
         const isSel = selectedCtx && id === selectedCtx;
-        const fill   = isSel ? 'rgba(255,255,255,0.22)' : isCtx ? 'rgba(74,158,255,0.18)' : 'rgba(74,158,255,0.07)';
+        const prob1 = n === 1 ? (nodeFreq[id] || 0) : 0;
+        const fill   = isSel ? 'rgba(255,255,255,0.22)'
+                     : n === 1 ? `rgba(74,158,255,${(0.08 + prob1 * 0.55).toFixed(2)})`
+                     : isCtx  ? 'rgba(74,158,255,0.18)' : 'rgba(74,158,255,0.07)';
         const stroke = isSel ? '#ffffff' : '#4a9eff';
-        const sw     = isSel ? 5 : isCtx ? 3.5 : 2;
-        const glow   = (isCtx || isSel) ? 'filter="url(#glow3)"' : '';
-        const fw     = isCtx ? '700' : '400';
-        const fc     = isSel ? '#ffffff' : isCtx ? '#e8eaf0' : '#aac4e8';
+        const sw     = isSel ? 5 : n === 1 ? (1.5 + prob1 * 3).toFixed(1) : isCtx ? 3.5 : 2;
+        const glow   = (isCtx || isSel || (n === 1 && prob1 > 0.08)) ? 'filter="url(#glow3)"' : '';
+        const fw     = (isCtx || n === 1) ? '700' : '400';
+        const fc     = isSel ? '#ffffff' : isCtx ? '#e8eaf0' : n === 1 ? '#e8eaf0' : '#aac4e8';
 
         const rw = nodeRW[id];
+        const labelY = n === 1 ? (-fsize * 0.15).toFixed(1) : (fsize * 0.38).toFixed(1);
         nodesSvg += `
-          <rect x="${(x - rw).toFixed(1)}" y="${(y - RH).toFixed(1)}"
-            width="${(rw * 2).toFixed(1)}" height="${(RH * 2).toFixed(1)}" rx="${RCORNER.toFixed(1)}"
-            fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${glow}/>
-          <text x="${x.toFixed(1)}" y="${(y + fsize * 0.38).toFixed(1)}" text-anchor="middle"
-            font-size="${fsize}" font-weight="${fw}" fill="${fc}"
-            style="pointer-events:none">${id}</text>`;
+          <g class="graph-node" data-id="${id}" transform="translate(${x.toFixed(1)},${y.toFixed(1)})" style="cursor:grab">
+            <rect x="${(-rw).toFixed(1)}" y="${(-RH).toFixed(1)}"
+              width="${(rw * 2).toFixed(1)}" height="${(RH * 2).toFixed(1)}" rx="${RCORNER.toFixed(1)}"
+              fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${glow}/>
+            <text x="0" y="${labelY}" text-anchor="middle"
+              font-size="${fsize}" font-weight="${fw}" fill="${fc}"
+              style="pointer-events:none">${id}</text>
+            ${n === 1 ? `<text x="0" y="${(RH * 0.55).toFixed(1)}" text-anchor="middle"
+              font-size="${fsize - 6}" fill="#4a9eff" style="pointer-events:none">${(prob1*100).toFixed(0)}%</text>` : ''}
+          </g>`;
       });
 
+      const pan = graphPan[n] || { x: 0, y: 0 };
+      const hasUserDrags = nodeArr.some(id => userPos[`${n}:${id}`]);
+      const hasCPs = Object.keys(edgeControlPts).some(k => k.startsWith(`${n}:`));
+      const hasChanges = hasUserDrags || pan.x !== 0 || pan.y !== 0 || hasCPs;
       panel.innerHTML = `
-        <div class="graph-panel-title">Граф Маркова (N=${n})${selectedCtx ? ' · ' + selectedCtx : ''}</div>
-        <svg viewBox="0 0 ${SZ} ${SZ}" xmlns="http://www.w3.org/2000/svg"
-             style="flex:1;width:100%;height:100%;" preserveAspectRatio="xMidYMid meet">
-          ${defs}${edgesSvg}${nodesSvg}
+        <div class="graph-panel-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span>Граф Маркова (N=${n})${n > 1 && selectedCtx ? ' · ' + selectedCtx : ''}</span>
+          ${hasChanges ? `<button id="graph-reset-btn" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-muted);cursor:pointer;">↺ Сброс</button>` : ''}
+        </div>
+        <svg viewBox="${pan.x.toFixed(1)} ${pan.y.toFixed(1)} ${SZ} ${SZ}" xmlns="http://www.w3.org/2000/svg"
+             style="flex:1;width:100%;height:100%;cursor:grab;" preserveAspectRatio="xMidYMid meet">
+          ${defs}${edgesSvg}${nodesSvg}${cpSvg}
         </svg>
         <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0 0;flex-shrink:0;">
           ${count} вершин · ${allEdges.length} рёбер
         </div>`;
+
+      // ── Reset button ──────────────────────────────────────────
+      const resetBtn = panel.querySelector('#graph-reset-btn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          nodeArr.forEach(id => delete userPos[`${n}:${id}`]);
+          delete graphPan[n];
+          Object.keys(edgeControlPts).forEach(k => { if (k.startsWith(`${n}:`)) delete edgeControlPts[k]; });
+          saveState();
+          renderFullGraph(table, n, selectedCtx);
+        });
+      }
+
+      // ── Drag & drop + Pan ─────────────────────────────────────
+      const svgEl = panel.querySelector('svg');
+      let draggingId = null, dragStartSVG = {x:0,y:0}, dragStartNode = {x:0,y:0};
+      let isPanning = false, panStart = {x:0,y:0}, panStartPan = {x:0,y:0};
+      let panScaleX = 1, panScaleY = 1;
+      let draggingCP = null, cpDragStart = {x:0,y:0}, cpStartM = {x:0,y:0}, cpStartS = {x:0,y:0}, cpStartE = {x:0,y:0};
+
+      function svgPt(e) {
+        const pt = svgEl.createSVGPoint();
+        pt.x = e.clientX; pt.y = e.clientY;
+        return pt.matrixTransform(svgEl.getScreenCTM().inverse());
+      }
+
+      function edgePathData(from, to) {
+        const p1 = livePos[from], p2 = livePos[to];
+        if (!p1 || !p2) return null;
+        const dx = p2.x - p1.x, dy = p2.y - p1.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        const nx = dx/dist, ny = dy/dist;
+        const perp = 38;
+        const storedCP = edgeControlPts[`${n}:${from}||${to}`];
+        const emx = storedCP ? storedCP.x : (p1.x+p2.x)/2 - ny*perp;
+        const emy = storedCP ? storedCP.y : (p1.y+p2.y)/2 + nx*perp;
+        const sdx = emx-p1.x, sdy = emy-p1.y, sd = Math.sqrt(sdx*sdx+sdy*sdy)||1;
+        const adx = p2.x-emx, ady = p2.y-emy, ad = Math.sqrt(adx*adx+ady*ady)||1;
+        const s = rectBorder(p1.x,p1.y, sdx/sd,sdy/sd, nodeRW[from],RH, 0);
+        const e = rectBorder(p2.x,p2.y, -adx/ad,-ady/ad, nodeRW[to],RH, 2);
+        const mx = storedCP ? storedCP.x : (s.x+e.x)/2 - ny*perp;
+        const my = storedCP ? storedCP.y : (s.y+e.y)/2 + nx*perp;
+        const cmx2 = (s.x + 2*mx + e.x) / 4, cmy2 = (s.y + 2*my + e.y) / 4;
+        return {
+          d: `M${s.x.toFixed(1)},${s.y.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${e.x.toFixed(1)},${e.y.toFixed(1)}`,
+          lx: Math.round(cmx2), ly: Math.round(cmy2) - 12,
+          mx, my, cmx: cmx2, cmy: cmy2,
+          sx: s.x, sy: s.y, ex: e.x, ey: e.y
+        };
+      }
+
+      function redrawEdgesForNode(id) {
+        svgEl.querySelectorAll(`[data-from]`).forEach(pathEl => {
+          if (pathEl.dataset.from !== id && pathEl.dataset.to !== id) return;
+          const from = pathEl.dataset.from, to = pathEl.dataset.to;
+          const res = edgePathData(from, to);
+          if (!res) return;
+          pathEl.setAttribute('d', res.d);
+          const lbl = svgEl.querySelector(`[data-elabel="${from}||${to}"]`);
+          if (lbl) { lbl.setAttribute('x', res.lx); lbl.setAttribute('y', res.ly); }
+          // Update CP circles for this edge
+          svgEl.querySelectorAll(`[data-edge="${from}||${to}"].edge-cp`).forEach(cpEl => {
+            cpEl.setAttribute('cx', res.cmx.toFixed(1));
+            cpEl.setAttribute('cy', res.cmy.toFixed(1));
+            cpEl.setAttribute('data-sx', res.sx.toFixed(2));
+            cpEl.setAttribute('data-sy', res.sy.toFixed(2));
+            cpEl.setAttribute('data-ex', res.ex.toFixed(2));
+            cpEl.setAttribute('data-ey', res.ey.toFixed(2));
+          });
+        });
+        // Self-loop
+        const sl = svgEl.querySelector(`[data-selfloop="${id}"]`);
+        if (sl) {
+          sl.setAttribute('cx', livePos[id].x.toFixed(1));
+          sl.setAttribute('cy', (livePos[id].y - RH - 28).toFixed(1));
+        }
+      }
+
+      function ensureResetBtn() {
+        if (!panel.querySelector('#graph-reset-btn')) {
+          const titleEl = panel.querySelector('.graph-panel-title');
+          if (titleEl) {
+            const btn = document.createElement('button');
+            btn.id = 'graph-reset-btn';
+            btn.textContent = '↺ Сброс';
+            btn.style.cssText = 'font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-muted);cursor:pointer;';
+            btn.addEventListener('click', () => {
+              nodeArr.forEach(id => delete userPos[`${n}:${id}`]);
+              delete graphPan[n];
+              Object.keys(edgeControlPts).forEach(k => { if (k.startsWith(`${n}:`)) delete edgeControlPts[k]; });
+              saveState();
+              renderFullGraph(table, n, selectedCtx);
+            });
+            titleEl.appendChild(btn);
+          }
+        }
+      }
+
+      svgEl.addEventListener('mousedown', e => {
+        const cp = e.target.closest('.edge-cp');
+        if (cp) {
+          // Control point drag
+          e.preventDefault(); e.stopPropagation();
+          draggingCP = cp.dataset.edge;
+          cpDragStart = svgPt(e);
+          const res = edgePathData(...draggingCP.split('||'));
+          // cpStartM = point ON curve at t=0.5 (what user drags)
+          cpStartM = res ? { x: res.cmx, y: res.cmy } : {x:0,y:0};
+          cpStartS = res ? { x: res.sx,  y: res.sy  } : {x:0,y:0};
+          cpStartE = res ? { x: res.ex,  y: res.ey  } : {x:0,y:0};
+          return;
+        }
+        const g = e.target.closest('.graph-node');
+        if (g) {
+          // Node drag
+          e.preventDefault();
+          draggingId = g.dataset.id;
+          dragStartSVG = svgPt(e);
+          dragStartNode = { x: livePos[draggingId].x, y: livePos[draggingId].y };
+          g.style.cursor = 'grabbing';
+          svgEl.appendChild(g);
+        } else {
+          // Background pan
+          e.preventDefault();
+          isPanning = true;
+          panStart = { x: e.clientX, y: e.clientY };
+          panStartPan = { x: pan.x, y: pan.y };
+          const ctm = svgEl.getScreenCTM();
+          panScaleX = 1 / ctm.a;
+          panScaleY = 1 / ctm.d;
+          svgEl.style.cursor = 'grabbing';
+        }
+      });
+
+      svgEl.addEventListener('mousemove', e => {
+        if (draggingCP) {
+          e.preventDefault();
+          const pt = svgPt(e);
+          // User drags the point ON the curve; invert to get new Bezier control point
+          const newCmx = cpStartM.x + (pt.x - cpDragStart.x);
+          const newCmy = cpStartM.y + (pt.y - cpDragStart.y);
+          const newMx = 2*newCmx - (cpStartS.x + cpStartE.x) / 2;
+          const newMy = 2*newCmy - (cpStartS.y + cpStartE.y) / 2;
+          edgeControlPts[`${n}:${draggingCP}`] = { x: newMx, y: newMy };
+          saveState();
+          const [from, to] = draggingCP.split('||');
+          const res = edgePathData(from, to);
+          if (res) {
+            const pathEl = svgEl.querySelector(`[data-from="${from}"][data-to="${to}"]`);
+            if (pathEl) pathEl.setAttribute('d', res.d);
+            const lbl = svgEl.querySelector(`[data-elabel="${draggingCP}"]`);
+            if (lbl) { lbl.setAttribute('x', res.lx); lbl.setAttribute('y', res.ly); }
+            // Update ALL cp circles for this edge (visible + hit-zone)
+            svgEl.querySelectorAll(`[data-edge="${draggingCP}"].edge-cp`).forEach(cpEl => {
+              cpEl.setAttribute('cx', res.cmx.toFixed(1));
+              cpEl.setAttribute('cy', res.cmy.toFixed(1));
+              if (parseFloat(cpEl.getAttribute('r')) < 15) {
+                cpEl.setAttribute('fill', 'rgba(74,158,255,0.6)');
+                cpEl.setAttribute('stroke', 'rgba(74,158,255,0.9)');
+              }
+            });
+          }
+          ensureResetBtn();
+          return;
+        }
+        if (draggingId) {
+          e.preventDefault();
+          const pt = svgPt(e);
+          const nx = dragStartNode.x + (pt.x - dragStartSVG.x);
+          const ny = dragStartNode.y + (pt.y - dragStartSVG.y);
+          livePos[draggingId].x = nx; livePos[draggingId].y = ny;
+          userPos[`${n}:${draggingId}`] = { x: nx, y: ny };
+          saveState();
+          const g = svgEl.querySelector(`[data-id="${draggingId}"]`);
+          if (g) g.setAttribute('transform', `translate(${nx.toFixed(1)},${ny.toFixed(1)})`);
+          redrawEdgesForNode(draggingId);
+          ensureResetBtn();
+        } else if (isPanning) {
+          e.preventDefault();
+          const dX = e.clientX - panStart.x;
+          const dY = e.clientY - panStart.y;
+          pan.x = panStartPan.x - dX * panScaleX;
+          pan.y = panStartPan.y - dY * panScaleY;
+          graphPan[n] = { x: pan.x, y: pan.y };
+          svgEl.setAttribute('viewBox', `${pan.x.toFixed(1)} ${pan.y.toFixed(1)} ${SZ} ${SZ}`);
+          saveState();
+          ensureResetBtn();
+        }
+      });
+
+      svgEl.addEventListener('mouseup', () => {
+        if (draggingCP) { draggingCP = null; return; }
+        if (draggingId) {
+          const g = svgEl.querySelector(`[data-id="${draggingId}"]`);
+          if (g) g.style.cursor = 'grab';
+          draggingId = null;
+        }
+        if (isPanning) {
+          isPanning = false;
+          svgEl.style.cursor = 'grab';
+        }
+      });
+      svgEl.addEventListener('mouseleave', () => {
+        draggingCP = null;
+        draggingId = null;
+        isPanning = false;
+        svgEl.style.cursor = 'grab';
+      });
     }
 
     // ── Table rendering ─────────────────────────────────────────
+    let _loadVersion = 0;
+
     async function loadTable(n) {
+      const version = ++_loadVersion;
       const container = document.getElementById("table-container");
       container.innerHTML = `<div style="color:var(--text-muted); font-size:14px;">Загрузка…</div>`;
 
       try {
         const data = await apiFetch(`/api/ngram/table?n=${n}`);
+        if (version !== _loadVersion) return; // stale response, newer request already fired
         const table = data.table;
         const entries = Object.entries(table);
 
