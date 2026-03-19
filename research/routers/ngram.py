@@ -97,7 +97,7 @@ def ngram_table(n: int = Query(2, ge=1, le=5)):
 @router.get("/generate")
 def ngram_generate(
     order: int = Query(2, ge=1, le=5),
-    start: str = Query("железо"),
+    start: str = Query("кот"),
     words: int = Query(5, ge=1, le=20),
     seed: int = Query(42),
 ):
