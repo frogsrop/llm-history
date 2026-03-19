@@ -60,38 +60,89 @@
       </div>
       <!-- RNN SVG -->
       <div class="rnn-svg-wrap" id="svg-rnn">
-        <svg class="diagram-svg" viewBox="0 0 680 180" xmlns="http://www.w3.org/2000/svg">
+        <svg class="diagram-svg" viewBox="0 0 700 278" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <marker id="arr"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#30363d"/></marker>
-            <marker id="arrH" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
+            <marker id="arr"    markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#30363d"/></marker>
+            <marker id="arrH"   markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
+            <marker id="arrX"   markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#a5d6ff"/></marker>
+            <marker id="arrOut" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#3fb950"/></marker>
           </defs>
-          <text x="60"  y="168" class="token-label" text-anchor="middle" id="rnn-tok-0">…</text>
-          <text x="190" y="168" class="token-label" text-anchor="middle" id="rnn-tok-1">…</text>
-          <text x="320" y="168" class="token-label" text-anchor="middle" id="rnn-tok-2">…</text>
-          <text x="450" y="168" class="token-label" text-anchor="middle" id="rnn-tok-3">…</text>
-          <text x="580" y="168" class="token-label" text-anchor="middle" id="rnn-tok-4">…</text>
-          <line x1="60"  y1="156" x2="60"  y2="122" class="arr"/>
-          <line x1="190" y1="156" x2="190" y2="122" class="arr"/>
-          <line x1="320" y1="156" x2="320" y2="122" class="arr"/>
-          <line x1="450" y1="156" x2="450" y2="122" class="arr"/>
-          <line x1="580" y1="156" x2="580" y2="122" class="arr"/>
-          <rect x="30"  y="80" width="60" height="40" rx="6" class="rnn-cell"/>
-          <rect x="160" y="80" width="60" height="40" rx="6" class="rnn-cell"/>
-          <rect x="290" y="80" width="60" height="40" rx="6" class="rnn-cell"/>
-          <rect x="420" y="80" width="60" height="40" rx="6" class="rnn-cell"/>
-          <rect x="550" y="80" width="60" height="40" rx="6" class="rnn-cell"/>
-          <text x="60"  y="104" class="node-label" text-anchor="middle">h₁</text>
-          <text x="190" y="104" class="node-label" text-anchor="middle">h₂</text>
-          <text x="320" y="104" class="node-label" text-anchor="middle">h₃</text>
-          <text x="450" y="104" class="node-label" text-anchor="middle">h₄</text>
-          <text x="580" y="104" class="node-label" text-anchor="middle">h₅</text>
-          <line x1="90"  y1="100" x2="158" y2="100" class="arr-h anim"/>
-          <line x1="220" y1="100" x2="288" y2="100" class="arr-h anim"/>
-          <line x1="350" y1="100" x2="418" y2="100" class="arr-h anim"/>
-          <line x1="480" y1="100" x2="548" y2="100" class="arr-h anim"/>
-          <line x1="580" y1="80" x2="580" y2="50" class="arr"/>
-          <rect x="548" y="30" width="64" height="22" rx="4" fill="var(--bg-hover)" stroke="var(--border)" stroke-width="1"/>
-          <text x="580" y="45" font-family="Segoe UI" font-size="11" fill="var(--text-muted)" text-anchor="middle">y (next)</text>
+
+          <!-- ── EXPANDED CELL ── -->
+
+          <!-- h_{t-1} from left -->
+          <text x="44" y="91" font-family="Segoe UI" font-size="12" fill="#A855F7" text-anchor="middle" font-weight="600">h_{t-1}</text>
+          <text x="44" y="104" font-family="Segoe UI" font-size="10" fill="var(--text-muted)" text-anchor="middle">память</text>
+          <line x1="82" y1="96" x2="272" y2="96" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)"/>
+          <text x="177" y="90" font-family="Segoe UI" font-size="10" fill="var(--text-muted)" text-anchor="middle">Wh · h</text>
+
+          <!-- Cell box -->
+          <rect x="236" y="56" width="200" height="82" rx="8" class="rnn-cell"/>
+
+          <!-- ⊕ node (сумматор) -->
+          <circle cx="286" cy="97" r="12" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5"/>
+          <text x="286" y="102" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle">⊕</text>
+
+          <!-- x_t from below into ⊕ -->
+          <line x1="286" y1="168" x2="286" y2="110" fill="none" stroke="#a5d6ff" stroke-width="1.8" marker-end="url(#arrX)"/>
+          <text x="302" y="163" font-family="Segoe UI" font-size="12" fill="#a5d6ff">x_t</text>
+          <text x="302" y="145" font-family="Segoe UI" font-size="10" fill="var(--text-muted)">Wx · x</text>
+
+          <!-- ⊕ → tanh (inside cell) -->
+          <line x1="298" y1="97" x2="318" y2="97" fill="none" stroke="#A855F7" stroke-width="1.5" marker-end="url(#arrH)"/>
+
+          <!-- tanh box -->
+          <rect x="322" y="83" width="52" height="28" rx="5" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5"/>
+          <text x="348" y="101" font-family="Segoe UI" font-size="12" fill="#A855F7" text-anchor="middle">tanh</text>
+
+          <!-- h_t exits cell, then branches -->
+          <line x1="374" y1="97" x2="408" y2="97" fill="none" stroke="#A855F7" stroke-width="1.8"/>
+          <circle cx="410" cy="97" r="3.5" fill="#A855F7"/>
+          <!-- → next step -->
+          <line x1="410" y1="97" x2="616" y2="97" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)" class="anim"/>
+          <text x="512" y="90" font-family="Segoe UI" font-size="12" fill="#A855F7" text-anchor="middle">h_t</text>
+          <text x="512" y="103" font-family="Segoe UI" font-size="10" fill="var(--text-muted)" text-anchor="middle">новая память</text>
+          <!-- → y(next) upward -->
+          <line x1="410" y1="93" x2="410" y2="27" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#arrOut)"/>
+          <text x="424" y="62" font-family="Segoe UI" font-size="10" fill="var(--text-muted)">W_out</text>
+          <rect x="376" y="8" width="68" height="20" rx="4" fill="var(--bg-hover)" stroke="#3fb950" stroke-width="1"/>
+          <text x="410" y="22" font-family="Segoe UI" font-size="11" fill="#3fb950" text-anchor="middle">y (next)</text>
+
+          <!-- Formula + description -->
+          <text x="350" y="178" font-family="Segoe UI" font-size="11" fill="var(--text-muted)" text-anchor="middle">h_t = tanh( Wh·h_{t-1} + Wx·x_t ) — одни и те же веса W на каждом шаге</text>
+
+          <!-- ── SEPARATOR ── -->
+          <line x1="20" y1="190" x2="680" y2="190" stroke="var(--border)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="350" y="204" font-family="Segoe UI" font-size="11" fill="var(--text-muted)" text-anchor="middle">разворачивается на всю последовательность (weight sharing)</text>
+
+          <!-- ── UNROLLED SEQUENCE ── cx = 65, 185, 305, 425, 545 -->
+          <rect x="30"  y="213" width="70" height="30" rx="4" class="rnn-cell"/>
+          <rect x="150" y="213" width="70" height="30" rx="4" class="rnn-cell"/>
+          <rect x="270" y="213" width="70" height="30" rx="4" class="rnn-cell"/>
+          <rect x="390" y="213" width="70" height="30" rx="4" class="rnn-cell"/>
+          <rect x="510" y="213" width="70" height="30" rx="4" class="rnn-cell"/>
+          <text x="65"  y="232" class="node-label" text-anchor="middle">h₁</text>
+          <text x="185" y="232" class="node-label" text-anchor="middle">h₂</text>
+          <text x="305" y="232" class="node-label" text-anchor="middle">h₃</text>
+          <text x="425" y="232" class="node-label" text-anchor="middle">h₄</text>
+          <text x="545" y="232" class="node-label" text-anchor="middle">h₅</text>
+          <!-- h arrows -->
+          <line x1="100" y1="228" x2="148" y2="228" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)" class="anim"/>
+          <line x1="220" y1="228" x2="268" y2="228" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)" class="anim"/>
+          <line x1="340" y1="228" x2="388" y2="228" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)" class="anim"/>
+          <line x1="460" y1="228" x2="508" y2="228" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)" class="anim"/>
+          <!-- x inputs -->
+          <line x1="65"  y1="258" x2="65"  y2="245" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX)"/>
+          <line x1="185" y1="258" x2="185" y2="245" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX)"/>
+          <line x1="305" y1="258" x2="305" y2="245" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX)"/>
+          <line x1="425" y1="258" x2="425" y2="245" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX)"/>
+          <line x1="545" y1="258" x2="545" y2="245" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX)"/>
+          <!-- Token labels -->
+          <text x="65"  y="270" class="token-label" text-anchor="middle" id="rnn-tok-0">…</text>
+          <text x="185" y="270" class="token-label" text-anchor="middle" id="rnn-tok-1">…</text>
+          <text x="305" y="270" class="token-label" text-anchor="middle" id="rnn-tok-2">…</text>
+          <text x="425" y="270" class="token-label" text-anchor="middle" id="rnn-tok-3">…</text>
+          <text x="545" y="270" class="token-label" text-anchor="middle" id="rnn-tok-4">…</text>
         </svg>
       </div>
       <!-- LSTM SVG -->
