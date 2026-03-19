@@ -238,7 +238,11 @@
         ];
 
         el.innerHTML = sentences.map(s =>
-          `<span class="corpus-sentence">${s}</span>`
+          `<span class="corpus-sentence">` +
+          `<span style="color:var(--text-muted);font-size:12px;opacity:0.7;">&lt;s&gt;</span> ` +
+          `${s} ` +
+          `<span style="color:var(--text-muted);font-size:12px;opacity:0.7;">&lt;/s&gt;</span>` +
+          `</span>`
         ).join("");
 
         // Заполняем datalist для input
@@ -637,7 +641,7 @@
 
       // ── Drag & drop + Pan ─────────────────────────────────────
       const svgEl = panel.querySelector('svg');
-      let draggingId = null, dragStartSVG = {x:0,y:0}, dragStartNode = {x:0,y:0};
+      let draggingId = null, dragStartSVG = {x:0,y:0}, dragStartNode = {x:0,y:0}, dragMoved = false;
       let isPanning = false, panStart = {x:0,y:0}, panStartPan = {x:0,y:0};
       let panScaleX = 1, panScaleY = 1;
       let draggingCP = null, cpDragStart = {x:0,y:0}, cpStartM = {x:0,y:0}, cpStartS = {x:0,y:0}, cpStartE = {x:0,y:0};
@@ -741,6 +745,7 @@
           draggingId = g.dataset.id;
           dragStartSVG = svgPt(e);
           dragStartNode = { x: livePos[draggingId].x, y: livePos[draggingId].y };
+          dragMoved = false;
           g.style.cursor = 'grabbing';
           svgEl.appendChild(g);
         } else {
@@ -792,6 +797,7 @@
           const pt = svgPt(e);
           const nx = dragStartNode.x + (pt.x - dragStartSVG.x);
           const ny = dragStartNode.y + (pt.y - dragStartSVG.y);
+          dragMoved = true;
           livePos[draggingId].x = nx; livePos[draggingId].y = ny;
           userPos[`${n}:${draggingId}`] = { x: nx, y: ny };
           saveState();
@@ -817,6 +823,19 @@
         if (draggingId) {
           const g = svgEl.querySelector(`[data-id="${draggingId}"]`);
           if (g) g.style.cursor = 'grab';
+          if (!dragMoved) {
+            // Click on node → select as context
+            const clickedId = draggingId;
+            draggingId = null;
+            // Highlight in table
+            const tbody = document.querySelector('#table-container tbody');
+            if (tbody) {
+              tbody.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
+              tbody.querySelectorAll(`tr[data-context="${CSS.escape(clickedId)}"]`).forEach(r => r.classList.add('selected'));
+            }
+            renderFullGraph(table, n, clickedId);
+            return;
+          }
           draggingId = null;
         }
         if (isPanning) {
@@ -851,9 +870,8 @@
           return;
         }
 
-        const maxRows = 30;
-        const shown = entries.slice(0, maxRows);
-        const truncated = entries.length > maxRows;
+        const shown = entries;
+        const truncated = false;
 
         const tableEl = document.createElement("table");
         const thead = document.createElement("thead");
@@ -870,7 +888,7 @@
         if (n === 1) {
           const nexts = Object.entries(table["*"] || {}).sort((a,b) => b[1]-a[1]);
           contextMap["*"] = table["*"] || {};
-          nexts.slice(0, maxRows).forEach(([word, prob]) => {
+          nexts.forEach(([word, prob]) => {
             const tr = document.createElement("tr");
             tr.dataset.context = "*";
             tr.innerHTML = `
@@ -977,6 +995,7 @@
       const order = parseInt(document.getElementById("ngram-order").value);
       const words = parseInt(document.getElementById("words-count").value);
       const seed = typeof getSeed === "function" ? getSeed() : 42;
+      const delay = parseInt(document.getElementById("gen-delay").value);
 
       showLoading(resultEl);
 
@@ -998,7 +1017,7 @@
         const newTokenEls = Array.from(resultEl.querySelectorAll(".gen-token:not(.seed)"));
         graphGenHighlight(allTokens, 0); // подсветить стартовое слово
         animateFlow(newTokenEls, {
-          delay: 500,
+          delay,
           cls: "active",
           keep: false,
           onStep: (el) => {
@@ -1045,6 +1064,26 @@
       });
 
       document.getElementById("generate-btn").addEventListener("click", generate);
+
+      // Inject delay control into sidebar seed section
+      const seedSection = document.getElementById("sidebar-seed-section");
+      if (seedSection) {
+        const delayWrap = document.createElement("div");
+        delayWrap.style.cssText = "margin-top:14px;";
+        delayWrap.innerHTML = `
+          <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Пауза</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="range" id="gen-delay" min="200" max="2000" value="500" step="100"
+                   style="width:80px; flex-shrink:0;">
+            <span id="gen-delay-val" style="font-size:13px; font-weight:600; color:var(--text); min-width:40px;">0.5с</span>
+          </div>`;
+        seedSection.appendChild(delayWrap);
+        document.getElementById("gen-delay").addEventListener("input", () => {
+          const ms = parseInt(document.getElementById("gen-delay").value);
+          document.getElementById("gen-delay-val").textContent =
+            ms >= 1000 ? (ms / 1000).toFixed(1) + 'с' : ms + 'мс';
+        });
+      }
 
       // Space → Генерировать
       document.addEventListener("animate", generate);
