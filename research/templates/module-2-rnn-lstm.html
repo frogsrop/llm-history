@@ -65,11 +65,11 @@
             <marker id="arr"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#30363d"/></marker>
             <marker id="arrH" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
           </defs>
-          <text x="60"  y="168" class="token-label" text-anchor="middle">кузнец</text>
-          <text x="190" y="168" class="token-label" text-anchor="middle">ковал</text>
-          <text x="320" y="168" class="token-label" text-anchor="middle">железо</text>
-          <text x="450" y="168" class="token-label" text-anchor="middle">пока</text>
-          <text x="580" y="168" class="token-label" text-anchor="middle">железо</text>
+          <text x="60"  y="168" class="token-label" text-anchor="middle" id="rnn-tok-0">…</text>
+          <text x="190" y="168" class="token-label" text-anchor="middle" id="rnn-tok-1">…</text>
+          <text x="320" y="168" class="token-label" text-anchor="middle" id="rnn-tok-2">…</text>
+          <text x="450" y="168" class="token-label" text-anchor="middle" id="rnn-tok-3">…</text>
+          <text x="580" y="168" class="token-label" text-anchor="middle" id="rnn-tok-4">…</text>
           <line x1="60"  y1="156" x2="60"  y2="122" class="arr"/>
           <line x1="190" y1="156" x2="190" y2="122" class="arr"/>
           <line x1="320" y1="156" x2="320" y2="122" class="arr"/>
@@ -101,11 +101,11 @@
             <marker id="arrHL" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#9b59b6"/></marker>
             <marker id="arrC"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#f1948a"/></marker>
           </defs>
-          <text x="60"  y="220" class="token-label" text-anchor="middle">кузнец</text>
-          <text x="190" y="220" class="token-label" text-anchor="middle">ковал</text>
-          <text x="320" y="220" class="token-label" text-anchor="middle">железо</text>
-          <text x="450" y="220" class="token-label" text-anchor="middle">пока</text>
-          <text x="580" y="220" class="token-label" text-anchor="middle">железо</text>
+          <text x="60"  y="220" class="token-label" text-anchor="middle" id="lstm-tok-0">…</text>
+          <text x="190" y="220" class="token-label" text-anchor="middle" id="lstm-tok-1">…</text>
+          <text x="320" y="220" class="token-label" text-anchor="middle" id="lstm-tok-2">…</text>
+          <text x="450" y="220" class="token-label" text-anchor="middle" id="lstm-tok-3">…</text>
+          <text x="580" y="220" class="token-label" text-anchor="middle" id="lstm-tok-4">…</text>
           <line x1="60"  y1="210" x2="60"  y2="176" class="arr"/>
           <line x1="190" y1="210" x2="190" y2="176" class="arr"/>
           <line x1="320" y1="210" x2="320" y2="176" class="arr"/>
@@ -168,11 +168,8 @@
       <div class="controls-row">
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:14px;color:var(--text-muted);">Начать со слова:</span>
-          <input type="text" id="start-word" class="word-input" value="железо" list="corpus-words">
-          <datalist id="corpus-words">
-            <option value="кузнец"><option value="ковал"><option value="железо">
-            <option value="горячим"><option value="молот"><option value="форму">
-          </datalist>
+          <input type="text" id="start-word" class="word-input" value="кот" list="corpus-words">
+          <datalist id="corpus-words"></datalist>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:14px;color:var(--text-muted);">Слов:</span>
@@ -197,7 +194,7 @@
         <strong>Долгий путь → слабый сигнал:</strong> hidden state передаётся через умножения.
         При длинных последовательностях сигнал затухает — ранние токены почти не влияют на предсказание.<br><br>
         <strong>Это не жёсткий обрыв</strong>, как у N-gram, а постепенная деградация.
-        «Кузнец» к концу предложения помнится хуже, чем «горячим».
+        «Кот» в начале предложения помнится к концу хуже, чем «дождь» в середине.
       </div>
     </div>
 
@@ -308,9 +305,31 @@
     document.getElementById("generate-btn").addEventListener("click", generate);
     document.addEventListener("animate", generate);
 
+    async function loadVocab() {
+      try {
+        const data = await apiFetch("/api/rnn/vocab");
+        // Populate datalist with corpus vocabulary
+        const dl = document.getElementById("corpus-words");
+        dl.innerHTML = data.vocab.map(w => `<option value="${w}">`).join("");
+
+        // Update SVG token labels with first 5 words of corpus
+        const sample = data.sample;
+        for (let i = 0; i < 5; i++) {
+          const word = sample[i] || "";
+          const rnnEl = document.getElementById(`rnn-tok-${i}`);
+          const lstmEl = document.getElementById(`lstm-tok-${i}`);
+          if (rnnEl) rnnEl.textContent = word;
+          if (lstmEl) lstmEl.textContent = word;
+        }
+      } catch (e) {
+        console.warn("vocab load failed:", e);
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       hiddenVal.textContent = HIDDEN_SIZES[parseInt(hiddenSlider.value)];
       initTooltips(document.getElementById("main-content"));
+      loadVocab();
     });
   </script>
 </body>

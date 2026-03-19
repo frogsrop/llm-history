@@ -21,12 +21,15 @@ from fastapi import APIRouter, Query
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from corpus import TOKENS
+from utils import BOS, EOS, make_tokens
+
+TOKENS = make_tokens(order=1)  # only EOS between sentences, no BOS padding
 
 router = APIRouter()
 
 # ── Device ────────────────────────────────────────────────────────────────────
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# TinyRNN/LSTM have a tiny vocab — CPU is faster than GPU for these models.
+DEVICE = torch.device("cpu")
 
 # ── Vocabulary ────────────────────────────────────────────────────────────────
 VOCAB = sorted(set(TOKENS))
@@ -74,6 +77,7 @@ class TinyRNN(nn.Module):
 
     def generate(self, start_idx: int, n: int, seed: int) -> list[int]:
         torch.manual_seed(seed)
+        eos_idx = W2I.get(EOS)
         result = []
         with torch.no_grad():
             h = torch.zeros(1, self.H, device=DEVICE)
@@ -83,6 +87,8 @@ class TinyRNN(nn.Module):
                 logits = self.out(h)
                 probs = F.softmax(logits, dim=-1)
                 idx = torch.multinomial(probs, 1).item()
+                if idx == eos_idx:
+                    break
                 result.append(idx)
                 x = F.one_hot(torch.tensor([idx], device=DEVICE), V).float()
         return result
@@ -121,6 +127,7 @@ class TinyLSTM(nn.Module):
 
     def generate(self, start_idx: int, n: int, seed: int) -> list[int]:
         torch.manual_seed(seed)
+        eos_idx = W2I.get(EOS)
         result = []
         with torch.no_grad():
             h = torch.zeros(1, self.H, device=DEVICE)
@@ -131,6 +138,8 @@ class TinyLSTM(nn.Module):
                 logits = self.out(h)
                 probs = F.softmax(logits, dim=-1)
                 idx = torch.multinomial(probs, 1).item()
+                if idx == eos_idx:
+                    break
                 result.append(idx)
                 x = F.one_hot(torch.tensor([idx], device=DEVICE), V).float()
         return result
@@ -209,6 +218,15 @@ def _generate_response(cache, hidden_size, start, words, seed):
         "hidden_size": hidden_size,
         "fallback_used": fallback,
     }
+
+
+@router.get("/vocab")
+def rnn_vocab():
+    """Return corpus vocabulary and a sample token sequence for the UI SVG diagram."""
+    from corpus import SENTENCES
+    words = sorted(w for w in VOCAB if not w.startswith("<"))
+    sample = SENTENCES[0].split()[:5] if SENTENCES else []
+    return {"vocab": words, "sample": sample}
 
 
 @router.get("/status")
