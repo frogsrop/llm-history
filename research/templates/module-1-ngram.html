@@ -272,13 +272,14 @@
     }
 
     function saveState() {
-      try { localStorage.setItem(LS_KEY, JSON.stringify({ userPos, graphPan, edgeControlPts })); }
+      try { localStorage.setItem(LS_KEY, JSON.stringify({ userPos, graphPan, graphZoom, edgeControlPts })); }
       catch {}
     }
 
     const _state = loadState();
     let userPos        = _state.userPos        || {};
     let graphPan       = _state.graphPan       || {};
+    let graphZoom      = _state.graphZoom      || {};
     let edgeControlPts = _state.edgeControlPts || {};
 
     function renderFullGraph(table, n, selectedCtx) {
@@ -610,16 +611,17 @@
           </g>`;
       });
 
-      const pan = graphPan[n] || { x: 0, y: 0 };
+      const pan  = graphPan[n]  || { x: 0, y: 0 };
+      let zoom   = graphZoom[n] || 1;
       const hasUserDrags = nodeArr.some(id => userPos[`${n}:${id}`]);
       const hasCPs = Object.keys(edgeControlPts).some(k => k.startsWith(`${n}:`));
-      const hasChanges = hasUserDrags || pan.x !== 0 || pan.y !== 0 || hasCPs;
+      const hasChanges = hasUserDrags || pan.x !== 0 || pan.y !== 0 || zoom !== 1 || hasCPs;
       panel.innerHTML = `
         <div class="graph-panel-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <span>Граф Маркова (N=${n})${n > 1 && selectedCtx ? ' · ' + selectedCtx : ''}</span>
           ${hasChanges ? `<button id="graph-reset-btn" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-muted);cursor:pointer;">↺ Сброс</button>` : ''}
         </div>
-        <svg viewBox="${pan.x.toFixed(1)} ${pan.y.toFixed(1)} ${SZ} ${SZ}" xmlns="http://www.w3.org/2000/svg"
+        <svg viewBox="${pan.x.toFixed(1)} ${pan.y.toFixed(1)} ${(SZ*zoom).toFixed(1)} ${(SZ*zoom).toFixed(1)}" xmlns="http://www.w3.org/2000/svg"
              style="flex:1;width:100%;height:100%;cursor:grab;" preserveAspectRatio="xMidYMid meet">
           ${defs}${edgesSvg}${nodesSvg}${cpSvg}
         </svg>
@@ -633,6 +635,7 @@
         resetBtn.addEventListener('click', () => {
           nodeArr.forEach(id => delete userPos[`${n}:${id}`]);
           delete graphPan[n];
+          delete graphZoom[n];
           Object.keys(edgeControlPts).forEach(k => { if (k.startsWith(`${n}:`)) delete edgeControlPts[k]; });
           saveState();
           renderFullGraph(table, n, selectedCtx);
@@ -715,6 +718,7 @@
             btn.addEventListener('click', () => {
               nodeArr.forEach(id => delete userPos[`${n}:${id}`]);
               delete graphPan[n];
+              delete graphZoom[n];
               Object.keys(edgeControlPts).forEach(k => { if (k.startsWith(`${n}:`)) delete edgeControlPts[k]; });
               saveState();
               renderFullGraph(table, n, selectedCtx);
@@ -812,7 +816,7 @@
           pan.x = panStartPan.x - dX * panScaleX;
           pan.y = panStartPan.y - dY * panScaleY;
           graphPan[n] = { x: pan.x, y: pan.y };
-          svgEl.setAttribute('viewBox', `${pan.x.toFixed(1)} ${pan.y.toFixed(1)} ${SZ} ${SZ}`);
+          svgEl.setAttribute('viewBox', `${pan.x.toFixed(1)} ${pan.y.toFixed(1)} ${(SZ*zoom).toFixed(1)} ${(SZ*zoom).toFixed(1)}`);
           saveState();
           ensureResetBtn();
         }
@@ -841,6 +845,23 @@
           svgEl.style.cursor = 'grab';
         }
       });
+      svgEl.addEventListener('wheel', e => {
+        e.preventDefault();
+        const factor = e.deltaY > 0 ? 1.15 : 1 / 1.15;
+        const newZoom = Math.max(0.15, Math.min(6, zoom * factor));
+        const k = newZoom / zoom;
+        const pt = svgPt(e);
+        // Keep point under cursor fixed
+        pan.x = pt.x - (pt.x - pan.x) * k;
+        pan.y = pt.y - (pt.y - pan.y) * k;
+        zoom = newZoom;
+        graphPan[n]  = { x: pan.x, y: pan.y };
+        graphZoom[n] = zoom;
+        saveState();
+        svgEl.setAttribute('viewBox', `${pan.x.toFixed(1)} ${pan.y.toFixed(1)} ${(SZ*zoom).toFixed(1)} ${(SZ*zoom).toFixed(1)}`);
+        ensureResetBtn();
+      }, { passive: false });
+
       svgEl.addEventListener('mouseleave', () => {
         draggingCP = null;
         draggingId = null;
