@@ -238,7 +238,11 @@
         ];
 
         el.innerHTML = sentences.map(s =>
-          `<span class="corpus-sentence">${s}</span>`
+          `<span class="corpus-sentence">` +
+          `<span style="color:var(--text-muted);font-size:12px;opacity:0.7;">&lt;s&gt;</span> ` +
+          `${s} ` +
+          `<span style="color:var(--text-muted);font-size:12px;opacity:0.7;">&lt;/s&gt;</span>` +
+          `</span>`
         ).join("");
 
         // Заполняем datalist для input
@@ -600,7 +604,7 @@
               fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${glow}/>
             <text x="0" y="${labelY}" text-anchor="middle"
               font-size="${fsize}" font-weight="${fw}" fill="${fc}"
-              style="pointer-events:none">${id}</text>
+              style="pointer-events:none">${escapeHtml(id)}</text>
             ${n === 1 ? `<text x="0" y="${(RH * 0.55).toFixed(1)}" text-anchor="middle"
               font-size="${fsize - 6}" fill="#4a9eff" style="pointer-events:none">${(prob1*100).toFixed(0)}%</text>` : ''}
           </g>`;
@@ -637,7 +641,7 @@
 
       // ── Drag & drop + Pan ─────────────────────────────────────
       const svgEl = panel.querySelector('svg');
-      let draggingId = null, dragStartSVG = {x:0,y:0}, dragStartNode = {x:0,y:0};
+      let draggingId = null, dragStartSVG = {x:0,y:0}, dragStartNode = {x:0,y:0}, dragMoved = false;
       let isPanning = false, panStart = {x:0,y:0}, panStartPan = {x:0,y:0};
       let panScaleX = 1, panScaleY = 1;
       let draggingCP = null, cpDragStart = {x:0,y:0}, cpStartM = {x:0,y:0}, cpStartS = {x:0,y:0}, cpStartE = {x:0,y:0};
@@ -741,6 +745,7 @@
           draggingId = g.dataset.id;
           dragStartSVG = svgPt(e);
           dragStartNode = { x: livePos[draggingId].x, y: livePos[draggingId].y };
+          dragMoved = false;
           g.style.cursor = 'grabbing';
           svgEl.appendChild(g);
         } else {
@@ -792,6 +797,7 @@
           const pt = svgPt(e);
           const nx = dragStartNode.x + (pt.x - dragStartSVG.x);
           const ny = dragStartNode.y + (pt.y - dragStartSVG.y);
+          dragMoved = true;
           livePos[draggingId].x = nx; livePos[draggingId].y = ny;
           userPos[`${n}:${draggingId}`] = { x: nx, y: ny };
           saveState();
@@ -817,6 +823,17 @@
         if (draggingId) {
           const g = svgEl.querySelector(`[data-id="${draggingId}"]`);
           if (g) g.style.cursor = 'grab';
+          if (!dragMoved) {
+            const clickedId = draggingId;
+            draggingId = null;
+            const tbody = document.querySelector('#table-container tbody');
+            if (tbody) {
+              tbody.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
+              tbody.querySelectorAll(`tr[data-context="${CSS.escape(clickedId)}"]`).forEach(r => r.classList.add('selected'));
+            }
+            renderFullGraph(table, n, clickedId);
+            return;
+          }
           draggingId = null;
         }
         if (isPanning) {
