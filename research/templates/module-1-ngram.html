@@ -101,6 +101,21 @@
     tbody tr.selected td { background: rgba(74,158,255,0.07); }
     tbody tr { cursor: pointer; }
     tbody tr:hover td { background: rgba(255,255,255,0.03); }
+
+    /* ── Graph generation highlight ─────────────────────────── */
+    .graph-node.gen-active > rect {
+      stroke: #ffffff;
+      stroke-width: 5;
+      filter: url(#glow3);
+    }
+    .graph-node.gen-active > text { fill: #ffffff; }
+    .graph-node.gen-context > rect {
+      stroke: rgba(74,158,255,0.85);
+      stroke-width: 3.5;
+    }
+    svg.gen-running .graph-node:not(.gen-active):not(.gen-context) { opacity: 0.35; }
+    svg.gen-running path[data-from]:not(.gen-active) { opacity: 0.12 !important; }
+    path.gen-active { stroke: #ffffff !important; opacity: 1 !important; stroke-width: 3px !important; }
   </style>
 </head>
 <body>
@@ -912,6 +927,42 @@
       }
     }
 
+    // ── Graph generation highlight ──────────────────────────────
+    function graphGenHighlight(tokens, idx) {
+      const svgEl = document.querySelector('#graph-panel svg');
+      if (!svgEl) return;
+      // Clear previous
+      svgEl.querySelectorAll('.graph-node.gen-active, .graph-node.gen-context')
+        .forEach(el => el.classList.remove('gen-active', 'gen-context'));
+      svgEl.querySelectorAll('path.gen-active')
+        .forEach(el => { el.classList.remove('gen-active'); el.style.cssText = ''; });
+
+      if (idx < 0 || idx >= tokens.length) return;
+      svgEl.classList.add('gen-running');
+
+      const word = tokens[idx];
+      const nodeEl = svgEl.querySelector(`.graph-node[data-id="${CSS.escape(word)}"]`);
+      if (nodeEl) nodeEl.classList.add('gen-active');
+
+      if (_graphN >= 2 && idx > 0) {
+        const ctxKey = tokens.slice(Math.max(0, idx - (_graphN - 1)), idx).join(' ');
+        const ctxNode = svgEl.querySelector(`.graph-node[data-id="${CSS.escape(ctxKey)}"]`);
+        if (ctxNode) ctxNode.classList.add('gen-context');
+        const pathEl = svgEl.querySelector(`path[data-from="${CSS.escape(ctxKey)}"][data-to="${CSS.escape(word)}"]`);
+        if (pathEl) pathEl.classList.add('gen-active');
+      }
+    }
+
+    function graphGenClear() {
+      const svgEl = document.querySelector('#graph-panel svg');
+      if (!svgEl) return;
+      svgEl.classList.remove('gen-running');
+      svgEl.querySelectorAll('.graph-node.gen-active, .graph-node.gen-context')
+        .forEach(el => el.classList.remove('gen-active', 'gen-context'));
+      svgEl.querySelectorAll('path.gen-active')
+        .forEach(el => { el.classList.remove('gen-active'); el.style.cssText = ''; });
+    }
+
     // ── Generation ──────────────────────────────────────────────
     async function generate() {
       const resultEl = document.getElementById("generation-result");
@@ -938,13 +989,18 @@
 
         // Пошаговая анимация — подсвечиваем новые слова по одному
         const newTokenEls = Array.from(resultEl.querySelectorAll(".gen-token:not(.seed)"));
+        graphGenHighlight(allTokens, 0); // подсветить стартовое слово
         animateFlow(newTokenEls, {
           delay: 500,
           cls: "active",
           keep: false,
-          onStep: (el) => { el.classList.add("active"); },
+          onStep: (el) => {
+            el.classList.add("active");
+            graphGenHighlight(allTokens, parseInt(el.dataset.idx));
+          },
           onDone: () => {
             newTokenEls.forEach(el => el.classList.add("done"));
+            graphGenClear();
           },
         });
 
