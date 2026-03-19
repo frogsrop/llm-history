@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Эволюция языковых моделей</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* ── Timeline ─────────────────────────────────────────── */
+    .timeline-wrap {
+      position: relative;
+      padding: 56px 0 48px;
+      margin: 32px 0 40px;
+      overflow: visible;
+    }
+
+    .timeline-line {
+      position: absolute;
+      top: 56px;
+      left: 0; right: 0;
+      height: 2px;
+      background: var(--border);
+    }
+
+    .timeline-events {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .timeline-event {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .timeline-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 3px solid var(--bg-card);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      z-index: 1;
+      margin-bottom: 0;
+    }
+
+    .timeline-event:hover .timeline-dot,
+    .timeline-event.open .timeline-dot {
+      transform: scale(1.35);
+      box-shadow: 0 0 0 5px rgba(255,255,255,0.08);
+    }
+
+    .timeline-year {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 10px;
+      white-space: nowrap;
+    }
+
+    .timeline-label {
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 14px;
+      max-width: 120px;
+    }
+
+    .timeline-popup {
+      display: none;
+      position: absolute;
+      top: 38px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      width: 220px;
+      z-index: 300;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+    }
+    .timeline-popup.visible {
+      display: block;
+      animation: fadeIn 0.18s ease;
+    }
+    .timeline-popup-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .timeline-popup-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .timeline-popup-btn {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      color: #0d1117;
+      transition: opacity 0.15s;
+    }
+    .timeline-popup-btn:hover { opacity: 0.85; }
+
+    /* fix: left-most popup doesn't go off screen */
+    .timeline-event:first-child .timeline-popup { left: 0; transform: none; }
+    .timeline-event:last-child  .timeline-popup { left: auto; right: 0; transform: none; }
+
+    /* ── Module grid ──────────────────────────────────────── */
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .module-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color 0.18s, background 0.18s;
+      display: block;
+      position: relative;
+    }
+    .module-card:hover { border-color: var(--accent); background: var(--bg-hover); }
+
+    .module-card-epoch {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .module-card-title {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .module-card-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .module-card-done-badge {
+      position: absolute;
+      top: 16px; right: 16px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #3fb950;
+      display: none;
+    }
+    .module-card.done .module-card-done-badge { display: block; }
+
+    .module-card-wide { grid-column: span 2; }
+
+    /* ── Progress section ─────────────────────────────────── */
+    .progress-section {
+      margin-bottom: 36px;
+    }
+    .progress-section-label {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .progress-bar-wrap {
+      background: var(--border);
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--epoch-ngram), var(--epoch-rnn), var(--epoch-embeddings), var(--epoch-llm));
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <nav id="sidebar"></nav>
+
+  <main id="main-content">
+    <h1 class="section-title">Эволюция языковых моделей</h1>
+    <p class="section-sub">От цепей Маркова до GPT — интерактивный тур для докладчика</p>
+
+    <!-- Progress bar -->
+    <div class="progress-section">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+        <div class="progress-section-label" id="progress-label" style="margin-bottom:0;">Изучено 0 из 5 модулей</div>
+        <button id="reset-btn" class="btn" style="font-size:12px; padding:5px 12px; color:var(--text-muted);" title="Сбросить прогресс">Сбросить</button>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card" style="overflow:visible; position:relative;">
+      <div class="card-title" style="margin-bottom:0;">Исторический путь</div>
+      <div class="timeline-wrap">
+        <div class="timeline-line"></div>
+        <div class="timeline-events" id="timeline-events"></div>
+      </div>
+    </div>
+
+    <!-- Module cards -->
+    <h2 style="font-size:18px; font-weight:600; margin-bottom:16px; color:var(--text-muted);">Модули</h2>
+    <div class="module-grid" id="module-grid"></div>
+  </main>
+
+  <script src="/static/nav.js"></script>
+  <script src="/static/tooltip.js"></script>
+  <script>
+    // ── Timeline data ─────────────────────────────────────────
+    const TIMELINE_EVENTS = [
+      {
+        year: "1990е–2000е",
+        label: "N-gram / Цепи Маркова",
+        color: "var(--epoch-ngram)",
+        module: 1,
+        desc: "Предсказание следующего слова по таблице частот. Просто, быстро, но без понимания смысла.",
+      },
+      {
+        year: "1986–1997",
+        label: "RNN / LSTM",
+        color: "var(--epoch-rnn)",
+        module: 2,
+        desc: "Нейронная сеть с памятью. Умеет запоминать контекст, но «забывает» начало длинного предложения.",
+      },
+      {
+        year: "2013",
+        label: "Word2Vec / Эмбеддинги",
+        color: "var(--epoch-embeddings)",
+        module: 3,
+        desc: "Слова стали векторами. Похожие по смыслу слова — близкие точки в пространстве.",
+      },
+      {
+        year: "2017+",
+        label: "LLM-эра",
+        color: "var(--epoch-llm)",
+        module: 4,
+        desc: "Attention + масштаб = революция. Одновременно видит весь контекст, обучается на сотнях ГБ текста.",
+      },
+    ];
+
+    // ── Module cards data ──────────────────────────────────────
+    const MODULE_CARDS = [
+      {
+        path: "/module/1",
+        epoch: "N-gram · 1990е–2000е",
+        color: "var(--epoch-ngram)",
+        title: "N-gram / Цепи Маркова",
+        desc: "Таблица переходов, предсказание по частотам. Просто и понятно.",
+      },
+      {
+        path: "/module/2",
+        epoch: "RNN / LSTM · 1986–1997",
+        color: "var(--epoch-rnn)",
+        title: "RNN / LSTM",
+        desc: "Нейронная память. Слайдер hidden size показывает как растёт качество.",
+      },
+      {
+        path: "/module/3",
+        epoch: "Word2Vec · 2013",
+        color: "var(--epoch-embeddings)",
+        title: "Эмбеддинги",
+        desc: "Карта слов в 2D. Арифметика: король − мужчина + женщина.",
+      },
+      {
+        path: "/module/4",
+        epoch: "LLM-эра · 2017+",
+        color: "var(--epoch-llm)",
+        title: "LLM-эра",
+        desc: "Конструктор улучшений: Seq2Seq → Attention → масштаб.",
+      },
+      {
+        path: "/module/5",
+        epoch: "Финал",
+        color: "var(--text-muted)",
+        title: "Финальное сравнение",
+        desc: "Одна задача — три ответа рядом: N-gram, RNN, LLM.",
+        wide: true,
+      },
+    ];
+
+    // ── Helpers ────────────────────────────────────────────────
+    const STORAGE_KEY_INDEX = "llm_explainer_visited";
+
+    function getVisitedPaths() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY_INDEX) || "[]"); }
+      catch { return []; }
+    }
+
+    // ── Render timeline ────────────────────────────────────────
+    function renderTimeline() {
+      const container = document.getElementById("timeline-events");
+      if (!container) return;
+
+      let openIdx = null;
+
+      TIMELINE_EVENTS.forEach((ev, i) => {
+        const wrap = document.createElement("div");
+        wrap.className = "timeline-event";
+        wrap.dataset.idx = i;
+
+        const label = document.createElement("div");
+        label.className = "timeline-label";
+        label.textContent = ev.label;
+        label.style.color = ev.color;
+
+        const dot = document.createElement("div");
+        dot.className = "timeline-dot";
+        dot.style.background = ev.color;
+
+        const year = document.createElement("div");
+        year.className = "timeline-year";
+        year.textContent = ev.year;
+
+        const popup = document.createElement("div");
+        popup.className = "timeline-popup";
+        popup.innerHTML = `
+          <div class="timeline-popup-title" style="color:${ev.color}">${ev.label}</div>
+          <div class="timeline-popup-desc">${ev.desc}</div>
+          <a class="timeline-popup-btn" href="/module/${ev.module}"
+             style="background:${ev.color}">Открыть модуль →</a>
+        `;
+
+        wrap.appendChild(label);
+        wrap.appendChild(dot);
+        wrap.appendChild(year);
+        wrap.appendChild(popup);
+        container.appendChild(wrap);
+
+        wrap.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isOpen = wrap.classList.contains("open");
+
+          // close all
+          container.querySelectorAll(".timeline-event").forEach(el => {
+            el.classList.remove("open");
+            el.querySelector(".timeline-popup").classList.remove("visible");
+          });
+
+          if (!isOpen) {
+            wrap.classList.add("open");
+            popup.classList.add("visible");
+          }
+        });
+      });
+
+      // Close popup on outside click
+      document.addEventListener("click", () => {
+        container.querySelectorAll(".timeline-event").forEach(el => {
+          el.classList.remove("open");
+          el.querySelector(".timeline-popup").classList.remove("visible");
+        });
+      });
+    }
+
+    // ── Render module cards ────────────────────────────────────
+    function renderModuleCards() {
+      const grid = document.getElementById("module-grid");
+      if (!grid) return;
+      const visited = getVisitedPaths();
+
+      MODULE_CARDS.forEach(card => {
+        const a = document.createElement("a");
+        a.className = "module-card" + (card.wide ? " module-card-wide" : "");
+        a.href = card.path;
+        if (visited.includes(card.path)) a.classList.add("done");
+
+        a.innerHTML = `
+          <div class="module-card-done-badge"></div>
+          <div class="module-card-epoch" style="color:${card.color}">${card.epoch}</div>
+          <div class="module-card-title">${card.title}</div>
+          <div class="module-card-desc">${card.desc}</div>
+        `;
+
+        grid.appendChild(a);
+      });
+    }
+
+    // ── Progress bar ───────────────────────────────────────────
+    function renderProgress() {
+      const visited = getVisitedPaths();
+      const modulePaths = MODULE_CARDS.map(c => c.path);
+      const done = modulePaths.filter(p => visited.includes(p)).length;
+      const total = modulePaths.length;
+      const pct = Math.round((done / total) * 100);
+
+      const label = document.getElementById("progress-label");
+      const fill = document.getElementById("progress-fill");
+      if (label) label.textContent = `Изучено ${done} из ${total} модулей`;
+      if (fill) fill.style.width = pct + "%";
+    }
+
+    // ── Reset progress ─────────────────────────────────────────
+    function resetProgress() {
+      localStorage.removeItem(STORAGE_KEY_INDEX);
+      // Re-render cards and progress without full reload
+      document.getElementById("module-grid").innerHTML = "";
+      renderModuleCards();
+      renderProgress();
+      // Also update sidebar dots via nav.js re-render
+      const sidebar = document.getElementById("sidebar");
+      sidebar.innerHTML = "";
+      renderSidebar();
+    }
+
+    // ── Init ───────────────────────────────────────────────────
+    document.addEventListener("DOMContentLoaded", () => {
+      renderTimeline();
+      renderModuleCards();
+      renderProgress();
+
+      document.getElementById("reset-btn").addEventListener("click", () => {
+        resetProgress();
+      });
+    });
+  </script>
+</body>
+</html>

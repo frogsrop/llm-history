@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Tests
+.pytest_cache/
+
+# Large model files
+research/models/
+
+# Claude internal
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

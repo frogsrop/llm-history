@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>N-gram / Цепи Маркова — LLM Evolution</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* ── Probability table ──────────────────────────────── */
+    .prob-bar {
+      display: inline-block;
+      height: 10px;
+      border-radius: 3px;
+      background: var(--epoch-ngram);
+      opacity: 0.7;
+      min-width: 2px;
+      vertical-align: middle;
+      transition: width 0.3s ease;
+    }
+    .prob-value { font-size: 12px; color: var(--text-muted); margin-left: 6px; }
+    td.next-word { font-weight: 600; color: var(--epoch-ngram); min-width: 100px; }
+    td.context-key { font-family: monospace; font-size: 13px; color: var(--text-muted); }
+
+    /* ── Generation result ──────────────────────────────── */
+    .gen-token {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin: 2px 3px;
+      font-size: 15px;
+      transition: background 0.25s, color 0.25s;
+    }
+    .gen-token.active {
+      background: rgba(74,158,255,0.25);
+      color: var(--epoch-ngram);
+      font-weight: 700;
+    }
+    .gen-token.done {
+      background: rgba(74,158,255,0.08);
+      color: var(--text);
+    }
+    .gen-token.seed {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-muted);
+    }
+
+    /* ── Start word input ───────────────────────────────── */
+    .word-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 14px;
+      width: 160px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .word-input:focus { border-color: var(--accent); }
+
+    /* ── Controls row ───────────────────────────────────── */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    /* ── Probability Graph Panel (fixed, right of main content) ── */
+    .graph-panel {
+      position: fixed;
+      left: calc(var(--sidebar-width) + 960px + 16px);
+      top: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      background: rgba(255,255,255,0.03);
+      border-left: 1px solid var(--border);
+      padding: 16px 18px;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+    }
+    .graph-panel-title {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+    .graph-placeholder {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    /* highlight selected row in table */
+    tbody tr.selected td { background: rgba(74,158,255,0.07); }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover td { background: rgba(255,255,255,0.03); }
+  </style>
+</head>
+<body>
+  <nav id="sidebar"></nav>
+
+  <!-- Probability graph — fixed in the empty space to the right of main content -->
+  <div class="graph-panel" id="graph-panel">
+    <div class="graph-panel-title">Граф Маркова</div>
+    <div class="graph-placeholder" style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px 0;">Загрузка…</div>
+  </div>
+
+  <main id="main-content">
+    <h1 class="section-title">
+      <span class="epoch-bar epoch-ngram"></span>N-gram / Цепи Маркова
+    </h1>
+    <p class="section-sub">1990е–2000е — предсказание по таблице переходов</p>
+
+    <!-- Corpus -->
+    <div class="card">
+      <div class="card-title">
+        Обучающий корпус
+        <span class="term" style="margin-left:8px; font-size:14px; font-weight:400; color:var(--text-muted);">
+          корпус
+          <button class="hint-btn" data-hint="Корпус — набор текстов, на которых 'учится' модель. Как список примеров для ученика.">?</button>
+        </span>
+      </div>
+      <div class="corpus-block" id="corpus-display"></div>
+    </div>
+
+    <!-- N-gram table -->
+    <div class="card">
+      <div class="card-title">
+        Таблица переходов
+        <span class="term" style="margin-left:8px; font-size:14px; font-weight:400; color:var(--text-muted);">
+          N-gram
+          <button class="hint-btn" data-hint="N-gram — это N слов подряд. Bigram = пара слов. Модель запоминает: 'после слова X обычно идёт слово Y'.">?</button>
+        </span>
+      </div>
+
+      <div class="slider-wrap">
+        <span class="slider-label">N =</span>
+        <input type="range" id="ngram-order" min="1" max="5" value="2" step="1">
+        <span class="slider-value" id="ngram-order-val">2</span>
+        <span style="font-size:13px; color:var(--text-muted); margin-left:4px;" id="ngram-order-label">(Bigram)</span>
+      </div>
+
+      <div id="table-container">
+        <div style="color:var(--text-muted); font-size:14px;">Загрузка таблицы…</div>
+      </div>
+    </div>
+
+    <!-- Generation -->
+    <div class="card">
+      <div class="card-title">Генерация</div>
+
+      <div class="controls-row">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:14px; color:var(--text-muted);">Начать со слова:</span>
+          <input type="text" id="start-word" class="word-input" value="железо" list="corpus-words">
+          <datalist id="corpus-words"></datalist>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:14px; color:var(--text-muted);">Слов:</span>
+          <input type="range" id="words-count" min="1" max="10" value="5" step="1" style="width:80px;">
+          <span id="words-count-val" style="font-size:14px; font-weight:600; min-width:20px;">5</span>
+        </div>
+        <button class="btn btn-primary" id="generate-btn">▶ Генерировать</button>
+      </div>
+
+      <div class="result-box" id="generation-result" style="min-height:52px; line-height:2;">
+        <span style="color:var(--text-muted);">Нажмите «Генерировать»</span>
+      </div>
+    </div>
+
+    <!-- Problem callout -->
+    <div class="card">
+      <div class="card-title">
+        Проблема N-gram
+        <span class="term" style="margin-left:8px; font-size:14px; font-weight:400; color:var(--text-muted);">
+          контекстное окно
+          <button class="hint-btn" data-hint="Контекстное окно — сколько слов назад модель 'помнит'. У N-gram это N−1 слов. Дальше — полная амнезия.">?</button>
+        </span>
+      </div>
+      <div class="callout warn">
+        <strong>Фиксированное окно памяти:</strong> N-gram видит только N−1 предыдущих слов.
+        Trigram при N=3 помнит 2 слова. Дальше — полная амнезия.<br><br>
+        <strong>Разреженность:</strong> редкие комбинации слов никогда не встречаются в корпусе —
+        модель не знает, что ответить. Чем больше N, тем больше «белых пятен» в таблице.
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/nav.js"></script>
+  <script src="/static/utils.js"></script>
+  <script src="/static/tooltip.js"></script>
+  <script>
+    const ORDER_LABELS = { 1: "Unigram", 2: "Bigram", 3: "Trigram", 4: "4-gram", 5: "5-gram" };
+
+    // ── Corpus display ──────────────────────────────────────────
+    async function loadCorpus() {
+      const el = document.getElementById("corpus-display");
+      try {
+        // Берём данные из таблицы чтобы знать токены
+        const data = await apiFetch("/api/ngram/table?n=1");
+        const vocab = Object.keys(data.table["*"] || {});
+
+        // Запрашиваем корпус — берём из таблицы n=1 token_count
+        // и отображаем захардкоженные предложения из API-ответа
+        const sentences = [
+          "кузнец ковал железо пока железо было горячим и кузница не остыла",
+          "горячее железо легко гнётся а холодное железо ломается под молотом кузнеца",
+          "молот кузнеца бил по железу и железо принимало форму нужную кузнецу",
+        ];
+
+        el.innerHTML = sentences.map(s =>
+          `<span class="corpus-sentence">${s}</span>`
+        ).join("");
+
+        // Заполняем datalist для input
+        const dl = document.getElementById("corpus-words");
+        vocab.forEach(w => {
+          const opt = document.createElement("option");
+          opt.value = w;
+          dl.appendChild(opt);
+        });
+      } catch (e) {
+        el.textContent = "Ошибка загрузки корпуса";
+      }
+    }
+
+    // ── Full Markov chain graph ──────────────────────────────────
+    let _graphTable = null;
+    let _graphN = 2;
+
+    function renderFullGraph(table, n, selectedCtx) {
+      _graphTable = table;
+      _graphN = n;
+
+      const panel = document.getElementById("graph-panel");
+
+      // Fixed viewBox coordinate space — SVG scales automatically via flex:1
+      // All positions are in this coordinate space; browser scales to fill panel
+      const VCX = 500, VCY = 500;
+
+      // ── Unigram: frequency bubbles in a circle ──
+      if (n === 1) {
+        const nexts = Object.entries(table["*"] || {}).sort((a,b) => b[1]-a[1]);
+        const count = nexts.length;
+        const NR = 55;
+        const rl = Math.max(180, count * (NR * 2 + 12) / (2 * Math.PI));
+        const SZ = Math.round((rl + NR + 30) * 2);
+        const cx = SZ / 2, cy = SZ / 2;
+
+        let nodesSvg = '';
+        nexts.forEach(([word, prob], i) => {
+          const angle = (2 * Math.PI * i / count) - Math.PI / 2;
+          const x = (cx + rl * Math.cos(angle)).toFixed(1);
+          const y = (cy + rl * Math.sin(angle)).toFixed(1);
+          const r = Math.round(28 + prob * 110);
+          const op = (0.12 + prob * 0.55).toFixed(2);
+          const lbl = word.length > 8 ? word.slice(0,7)+'…' : word;
+          nodesSvg += `
+            <circle cx="${x}" cy="${y}" r="${r}"
+              fill="rgba(74,158,255,${op})" stroke="#4a9eff" stroke-width="3"/>
+            <text x="${x}" y="${(parseFloat(y)-6).toFixed(1)}" text-anchor="middle"
+              font-size="26" font-weight="700" fill="#e8eaf0" style="pointer-events:none">${lbl}</text>
+            <text x="${x}" y="${(parseFloat(y)+22).toFixed(1)}" text-anchor="middle"
+              font-size="22" fill="#4a9eff" style="pointer-events:none">${(prob*100).toFixed(0)}%</text>`;
+        });
+        panel.innerHTML = `
+          <div class="graph-panel-title">Unigram — частоты слов</div>
+          <svg viewBox="0 0 ${SZ} ${SZ}" xmlns="http://www.w3.org/2000/svg"
+               style="flex:1;width:100%;height:100%;" preserveAspectRatio="xMidYMid meet">
+            ${nodesSvg}
+          </svg>`;
+        return;
+      }
+
+      // ── N≥2: full directed Markov graph ──────────────────────
+      const nodeSet = new Set();
+      const allEdges = [];
+      Object.entries(table).forEach(([ctx, nexts]) => {
+        nodeSet.add(ctx);
+        Object.entries(nexts).forEach(([word, prob]) => {
+          nodeSet.add(word);
+          allEdges.push({ from: ctx, to: word, prob, ctx });
+        });
+      });
+
+      const nodeArr = Array.from(nodeSet);
+      const count   = nodeArr.length;
+
+      // Rectangle dimensions in viewBox units
+      const BASE    = count <= 8 ? 60 : count <= 15 ? 52 : count <= 35 ? 38 : 28;
+      const RH      = BASE * 0.55;
+      const RCORNER = BASE * 0.22;
+      const fsize   = BASE >= 52 ? 26 : BASE >= 38 ? 20 : 15;
+
+      // Per-node half-width based on label length
+      const CHAR_W = fsize * 0.60;
+      const PAD_X  = BASE * 0.45;
+      const nodeRW = {};
+      nodeArr.forEach(id => {
+        nodeRW[id] = Math.max(BASE * 0.8, id.length * CHAR_W / 2 + PAD_X);
+      });
+      const maxRW = Math.max(...Object.values(nodeRW));
+
+      // ── Force-directed layout (Fruchterman-Reingold) ──────────
+      // Canvas size: fixed so SVG stays readable regardless of N
+      const SZ  = 1600;
+      const cx  = SZ / 2, cy = SZ / 2;
+      const AREA = SZ * SZ;
+      const K   = Math.sqrt(AREA / count) * 1.4;  // optimal distance (larger = more spread)
+
+      // Initialise positions on a circle (stable starting point)
+      const pos = {};
+      const vel = {};
+      nodeArr.forEach((id, i) => {
+        const angle = (2 * Math.PI * i / count) - Math.PI / 2;
+        const r0 = K * 1.5;
+        pos[id] = { x: cx + r0 * Math.cos(angle), y: cy + r0 * Math.sin(angle) };
+        vel[id] = { x: 0, y: 0 };
+      });
+
+      // Build adjacency set for fast lookup
+      const edgeSet = new Set(allEdges.map(e => e.from + '→' + e.to));
+
+      const ITERS = 250;
+      for (let iter = 0; iter < ITERS; iter++) {
+        const t = Math.max(2, K * (1 - iter / ITERS)); // temperature (cooling)
+
+        // Repulsion: every pair of nodes pushes apart
+        for (let i = 0; i < nodeArr.length; i++) {
+          for (let j = i + 1; j < nodeArr.length; j++) {
+            const a = nodeArr[i], b = nodeArr[j];
+            const dx = pos[a].x - pos[b].x;
+            const dy = pos[a].y - pos[b].y;
+            const d2 = dx * dx + dy * dy || 0.01;
+            const d  = Math.sqrt(d2);
+            const f  = (K * K) / d2;     // Coulomb: inversely proportional to d²
+            vel[a].x += dx / d * f;
+            vel[a].y += dy / d * f;
+            vel[b].x -= dx / d * f;
+            vel[b].y -= dy / d * f;
+          }
+        }
+
+        // Attraction: connected nodes pull together
+        allEdges.forEach(({ from, to }) => {
+          const dx = pos[to].x - pos[from].x;
+          const dy = pos[to].y - pos[from].y;
+          const d  = Math.sqrt(dx * dx + dy * dy) || 0.01;
+          const f  = d / K;              // Linear attraction (less aggressive than d²)
+          vel[from].x += dx / d * f;
+          vel[from].y += dy / d * f;
+          vel[to].x   -= dx / d * f;
+          vel[to].y   -= dy / d * f;
+        });
+
+        // Apply velocities with temperature cap + centre gravity
+        nodeArr.forEach(id => {
+          const v = vel[id];
+          // Gentle pull toward centre so graph doesn't drift off-screen
+          v.x += (cx - pos[id].x) * 0.004;
+          v.y += (cy - pos[id].y) * 0.004;
+          const speed = Math.sqrt(v.x * v.x + v.y * v.y) || 1;
+          const capped = Math.min(speed, t);
+          pos[id].x += v.x / speed * capped;
+          pos[id].y += v.y / speed * capped;
+          vel[id]    = { x: 0, y: 0 };
+        });
+      }
+
+      // ── Normalise: stretch positions to fill SZ with padding ──
+      const PAD = maxRW + 20;
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      nodeArr.forEach(id => {
+        minX = Math.min(minX, pos[id].x); maxX = Math.max(maxX, pos[id].x);
+        minY = Math.min(minY, pos[id].y); maxY = Math.max(maxY, pos[id].y);
+      });
+      const scaleX = (SZ - PAD * 2) / (maxX - minX || 1);
+      const scaleY = (SZ - PAD * 2) / (maxY - minY || 1);
+      const scale  = Math.min(scaleX, scaleY); // uniform scale, keep aspect ratio
+      const offX   = (SZ - (maxX - minX) * scale) / 2 - minX * scale;
+      const offY   = (SZ - (maxY - minY) * scale) / 2 - minY * scale;
+      nodeArr.forEach(id => {
+        pos[id].x = pos[id].x * scale + offX;
+        pos[id].y = pos[id].y * scale + offY;
+      });
+
+      // Find where a line from (cx,cy) in direction (nx,ny) exits the rectangle border
+      function rectBorder(px, py, nx, ny, hw, hh, margin) {
+        const tx = Math.abs(nx) > 1e-6 ? hw / Math.abs(nx) : Infinity;
+        const ty = Math.abs(ny) > 1e-6 ? hh / Math.abs(ny) : Infinity;
+        const t  = Math.min(tx, ty) + (margin || 0);
+        return { x: px + nx * t, y: py + ny * t };
+      }
+
+      const defs = `<defs>
+        <marker id="marr" viewBox="0 -4 8 8" refX="7" refY="0"
+          markerUnits="strokeWidth" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,-3.5 L7,0 L0,3.5" fill="none"
+            stroke="#4a9eff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <marker id="marr-hi" viewBox="0 -4 8 8" refX="7" refY="0"
+          markerUnits="strokeWidth" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,-3.5 L7,0 L0,3.5" fill="none"
+            stroke="#ffffff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <filter id="glow3">
+          <feGaussianBlur stdDeviation="5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>`;
+
+      let edgesSvg = '';
+      const sorted = [...allEdges].sort((a,b) =>
+        (a.ctx === selectedCtx ? 1 : 0) - (b.ctx === selectedCtx ? 1 : 0));
+
+      sorted.forEach(({ from, to, prob, ctx }) => {
+        const p1 = pos[from], p2 = pos[to];
+        if (!p1 || !p2) return;
+        const isSel = selectedCtx && ctx === selectedCtx;
+
+        // Self-loop: small arc above the top edge of the rectangle
+        if (from === to) {
+          const lx = p1.x, ly = p1.y - RH - 28;  // RH is fixed
+          const color = isSel ? '#ffffff' : '#4a9eff';
+          const op    = isSel ? 1 : (0.35 + prob * 0.65).toFixed(2);
+          edgesSvg += `
+            <ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="24" ry="18"
+              fill="none" stroke="${color}" stroke-width="${isSel ? 4 : 2}" opacity="${op}"/>
+            <text x="${lx.toFixed(1)}" y="${(ly - 24).toFixed(1)}" text-anchor="middle"
+              font-size="${fsize - 6}" fill="${color}" opacity="${op}"
+              style="pointer-events:none">${(prob*100).toFixed(0)}%</text>`;
+          return;
+        }
+
+        const dx = p2.x - p1.x, dy = p2.y - p1.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        const nx = dx/dist, ny = dy/dist;
+
+        // Perpendicular curve offset (based on center-to-center for orientation)
+        const perp = 38;
+        // Step 1: estimate control point from center midpoint
+        const emx = (p1.x + p2.x) / 2 - ny * perp;
+        const emy = (p1.y + p2.y) / 2 + nx * perp;
+        // Step 2: actual curve departure/approach directions
+        const sdx = emx - p1.x, sdy = emy - p1.y;
+        const sd = Math.sqrt(sdx*sdx + sdy*sdy) || 1;
+        const adx = p2.x - emx, ady = p2.y - emy;
+        const ad = Math.sqrt(adx*adx + ady*ady) || 1;
+        // Step 3: border points using actual curve directions
+        const s  = rectBorder(p1.x, p1.y,  sdx/sd,  sdy/sd, nodeRW[from], RH, 0);
+        const e  = rectBorder(p2.x, p2.y, -adx/ad, -ady/ad, nodeRW[to],   RH, 2);
+        // Step 4: final control point from corrected border points
+        const mx = (s.x + e.x) / 2 - ny * perp;
+        const my = (s.y + e.y) / 2 + nx * perp;
+
+        const color = isSel ? '#ffffff' : '#4a9eff';
+        const op    = isSel ? 1   : (0.3 + prob * 0.7).toFixed(2);
+        const sw    = isSel ? 2.5 : (0.6 + prob * 1.8).toFixed(1);
+        const lx = Math.round((s.x + 2*mx + e.x) / 4);
+        const ly = Math.round((s.y + 2*my + e.y) / 4) - 12;
+
+        edgesSvg += `
+          <path d="M${s.x.toFixed(1)},${s.y.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${e.x.toFixed(1)},${e.y.toFixed(1)}"
+            fill="none" stroke="${color}" stroke-width="${sw}" opacity="${op}"
+            marker-end="url(#${isSel ? 'marr-hi' : 'marr'})"/>
+          <text x="${lx}" y="${ly}" text-anchor="middle"
+            font-size="${fsize - 6}" font-weight="600" fill="${color}" opacity="${op}"
+            style="pointer-events:none">${(prob*100).toFixed(0)}%</text>`;
+      });
+
+      let nodesSvg = '';
+      nodeArr.forEach(id => {
+        const { x, y } = pos[id];
+        const isCtx = table[id] !== undefined;
+        const isSel = selectedCtx && id === selectedCtx;
+        const fill   = isSel ? 'rgba(255,255,255,0.22)' : isCtx ? 'rgba(74,158,255,0.18)' : 'rgba(74,158,255,0.07)';
+        const stroke = isSel ? '#ffffff' : '#4a9eff';
+        const sw     = isSel ? 5 : isCtx ? 3.5 : 2;
+        const glow   = (isCtx || isSel) ? 'filter="url(#glow3)"' : '';
+        const fw     = isCtx ? '700' : '400';
+        const fc     = isSel ? '#ffffff' : isCtx ? '#e8eaf0' : '#aac4e8';
+
+        const rw = nodeRW[id];
+        nodesSvg += `
+          <rect x="${(x - rw).toFixed(1)}" y="${(y - RH).toFixed(1)}"
+            width="${(rw * 2).toFixed(1)}" height="${(RH * 2).toFixed(1)}" rx="${RCORNER.toFixed(1)}"
+            fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${glow}/>
+          <text x="${x.toFixed(1)}" y="${(y + fsize * 0.38).toFixed(1)}" text-anchor="middle"
+            font-size="${fsize}" font-weight="${fw}" fill="${fc}"
+            style="pointer-events:none">${id}</text>`;
+      });
+
+      panel.innerHTML = `
+        <div class="graph-panel-title">Граф Маркова (N=${n})${selectedCtx ? ' · ' + selectedCtx : ''}</div>
+        <svg viewBox="0 0 ${SZ} ${SZ}" xmlns="http://www.w3.org/2000/svg"
+             style="flex:1;width:100%;height:100%;" preserveAspectRatio="xMidYMid meet">
+          ${defs}${edgesSvg}${nodesSvg}
+        </svg>
+        <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0 0;flex-shrink:0;">
+          ${count} вершин · ${allEdges.length} рёбер
+        </div>`;
+    }
+
+    // ── Table rendering ─────────────────────────────────────────
+    async function loadTable(n) {
+      const container = document.getElementById("table-container");
+      container.innerHTML = `<div style="color:var(--text-muted); font-size:14px;">Загрузка…</div>`;
+
+      try {
+        const data = await apiFetch(`/api/ngram/table?n=${n}`);
+        const table = data.table;
+        const entries = Object.entries(table);
+
+        if (entries.length === 0) {
+          container.innerHTML = `<div style="color:var(--text-muted);">Таблица пуста</div>`;
+          return;
+        }
+
+        const maxRows = 30;
+        const shown = entries.slice(0, maxRows);
+        const truncated = entries.length > maxRows;
+
+        const tableEl = document.createElement("table");
+        const thead = document.createElement("thead");
+        thead.innerHTML = n === 1
+          ? `<tr><th>Слово</th><th style="width:200px">Частота</th><th>P</th></tr>`
+          : `<tr><th>Контекст</th><th>Следующее слово</th><th style="width:200px">Вероятность</th><th>P</th></tr>`;
+        tableEl.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+
+        // Track context→nexts for click handler
+        const contextMap = {};
+
+        if (n === 1) {
+          const nexts = Object.entries(table["*"] || {}).sort((a,b) => b[1]-a[1]);
+          contextMap["*"] = table["*"] || {};
+          nexts.slice(0, maxRows).forEach(([word, prob]) => {
+            const tr = document.createElement("tr");
+            tr.dataset.context = "*";
+            tr.innerHTML = `
+              <td class="next-word">${word}</td>
+              <td><span class="prob-bar" style="width:${Math.round(prob*400)}px"></span></td>
+              <td class="prob-value">${(prob*100).toFixed(1)}%</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } else {
+          shown.forEach(([context, nexts]) => {
+            contextMap[context] = nexts;
+            const nextEntries = Object.entries(nexts).sort((a,b) => b[1]-a[1]);
+            nextEntries.forEach(([word, prob], i) => {
+              const tr = document.createElement("tr");
+              tr.dataset.context = context;
+              tr.innerHTML = `
+                ${i === 0 ? `<td class="context-key" rowspan="${nextEntries.length}">${context}</td>` : ""}
+                <td class="next-word">${word}</td>
+                <td><span class="prob-bar" style="width:${Math.round(prob*300)}px"></span></td>
+                <td class="prob-value">${(prob*100).toFixed(0)}%</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          });
+        }
+
+        // Click handler on rows
+        tbody.addEventListener("click", (e) => {
+          const tr = e.target.closest("tr");
+          if (!tr) return;
+          const ctx = tr.dataset.context;
+          if (!ctx) return;
+
+          // Highlight selected context rows
+          tbody.querySelectorAll("tr.selected").forEach(r => r.classList.remove("selected"));
+          tbody.querySelectorAll(`tr[data-context="${CSS.escape(ctx)}"]`).forEach(r => r.classList.add("selected"));
+
+          renderFullGraph(table, n, ctx);
+        });
+
+        tableEl.appendChild(tbody);
+        container.innerHTML = "";
+        container.appendChild(tableEl);
+
+        // Render full Markov graph; auto-highlight first context
+        const firstCtx = n === 1 ? "*" : (entries[0]?.[0]);
+        if (firstCtx) {
+          tbody.querySelectorAll(`tr[data-context="${CSS.escape(firstCtx)}"]`).forEach(r => r.classList.add("selected"));
+        }
+        renderFullGraph(table, n, firstCtx || null);
+
+        if (truncated) {
+          const note = document.createElement("div");
+          note.style.cssText = "margin-top:8px; font-size:12px; color:var(--text-muted);";
+          note.textContent = `Показано ${maxRows} из ${entries.length} записей`;
+          container.appendChild(note);
+        }
+      } catch(e) {
+        container.innerHTML = `<div style="color:var(--epoch-llm)">Ошибка: ${escapeHtml(e.message)}</div>`;
+      }
+    }
+
+    // ── Generation ──────────────────────────────────────────────
+    async function generate() {
+      const resultEl = document.getElementById("generation-result");
+      const start = document.getElementById("start-word").value.trim() || "железо";
+      const order = parseInt(document.getElementById("ngram-order").value);
+      const words = parseInt(document.getElementById("words-count").value);
+      const seed = typeof getSeed === "function" ? getSeed() : 42;
+
+      showLoading(resultEl);
+
+      try {
+        const data = await apiFetch(
+          `/api/ngram/generate?order=${order}&start=${encodeURIComponent(start)}&words=${words}&seed=${seed}`
+        );
+
+        const actualStart = data.start;
+        const generated = data.words;
+        const allTokens = [actualStart, ...generated];
+
+        // Рендерим токены
+        resultEl.innerHTML = allTokens.map((w, i) =>
+          `<span class="gen-token ${i === 0 ? 'seed' : ''}" data-idx="${i}">${w}</span>`
+        ).join(" ");
+
+        // Пошаговая анимация — подсвечиваем новые слова по одному
+        const newTokenEls = Array.from(resultEl.querySelectorAll(".gen-token:not(.seed)"));
+        animateFlow(newTokenEls, {
+          delay: 500,
+          cls: "active",
+          keep: false,
+          onStep: (el) => { el.classList.add("active"); },
+          onDone: () => {
+            newTokenEls.forEach(el => el.classList.add("done"));
+          },
+        });
+
+        if (data.fallback_used) {
+          const note = document.createElement("div");
+          note.style.cssText = "font-size:12px; color:var(--text-muted); margin-top:6px;";
+          note.textContent = `Слово "${start}" не найдено в корпусе, использован: "${actualStart}"`;
+          resultEl.appendChild(note);
+        }
+      } catch(e) {
+        showError(resultEl, e.message);
+      }
+    }
+
+    // ── Init ────────────────────────────────────────────────────
+    document.addEventListener("DOMContentLoaded", () => {
+      loadCorpus();
+      loadTable(2);
+
+      const slider = document.getElementById("ngram-order");
+      const sliderVal = document.getElementById("ngram-order-val");
+      const sliderLabel = document.getElementById("ngram-order-label");
+
+      slider.addEventListener("input", () => {
+        const n = parseInt(slider.value);
+        sliderVal.textContent = n;
+        sliderLabel.textContent = `(${ORDER_LABELS[n]})`;
+        loadTable(n);
+      });
+
+      const wordsSlider = document.getElementById("words-count");
+      const wordsVal = document.getElementById("words-count-val");
+      wordsSlider.addEventListener("input", () => {
+        wordsVal.textContent = wordsSlider.value;
+      });
+
+      document.getElementById("generate-btn").addEventListener("click", generate);
+
+      // Space → Генерировать
+      document.addEventListener("animate", generate);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>RNN / LSTM — LLM Evolution</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .mode-toggle { display:flex; gap:8px; margin-bottom:20px; }
+    .mode-btn {
+      padding:8px 22px; border-radius:var(--radius); border:1px solid var(--border);
+      background:var(--bg-card); color:var(--text-muted); font-size:14px; font-weight:600;
+      cursor:pointer; transition:background var(--transition),color var(--transition),border-color var(--transition);
+    }
+    .mode-btn.active { background:var(--epoch-rnn); border-color:var(--epoch-rnn); color:#0d1117; }
+    .rnn-svg-wrap { overflow-x:auto; margin:8px 0 4px; }
+    .rnn-cell { fill:#1c1f2e; stroke:var(--epoch-rnn); stroke-width:1.5; }
+    .rnn-cell-lstm { fill:#1c1f2e; stroke:#9b59b6; stroke-width:1.5; }
+    .node-label { font-family:"Segoe UI",sans-serif; font-size:11px; fill:var(--epoch-rnn); font-weight:600; }
+    .node-label-lstm { font-family:"Segoe UI",sans-serif; font-size:11px; fill:#c39bd3; font-weight:600; }
+    .token-label { font-family:"Segoe UI",sans-serif; font-size:12px; fill:#a5d6ff; }
+    .arr { fill:none; stroke:#30363d; stroke-width:1.5; marker-end:url(#arr); }
+    .arr-h { fill:none; stroke:var(--epoch-rnn); stroke-width:1.8; marker-end:url(#arrH); }
+    .arr-hl { fill:none; stroke:#9b59b6; stroke-width:1.8; marker-end:url(#arrHL); }
+    .arr-c { fill:none; stroke:#f1948a; stroke-width:1.5; stroke-dasharray:4,3; marker-end:url(#arrC); }
+    .gate-label { font-family:"Segoe UI",sans-serif; font-size:10px; fill:#c39bd3; }
+    @keyframes fp { 0%,100%{stroke-opacity:.3} 50%{stroke-opacity:1} }
+    .anim { animation:fp 1.2s ease-in-out infinite; }
+    .gen-token { display:inline-block; padding:2px 8px; border-radius:4px; margin:2px 3px; font-size:15px; transition:background .25s,color .25s; }
+    .gen-token.active { background:rgba(168,85,247,.3); color:var(--epoch-rnn); font-weight:700; }
+    .gen-token.done { background:rgba(168,85,247,.08); color:var(--text); }
+    .gen-token.seed { background:rgba(255,255,255,.06); color:var(--text-muted); }
+    .word-input { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); padding:8px 12px; font-size:14px; width:160px; outline:none; transition:border-color .2s; }
+    .word-input:focus { border-color:var(--epoch-rnn); }
+    .controls-row { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+    .cmp th { text-align:center; }
+    .cmp td { text-align:center; font-size:13px; }
+    .cmp td:first-child { text-align:left; font-weight:600; }
+    .tg { color:#3fb950; font-weight:600; }
+    .tb { color:var(--epoch-llm); }
+    .tm { color:var(--epoch-embeddings); }
+  </style>
+</head>
+<body>
+  <nav id="sidebar"></nav>
+  <main id="main-content">
+    <h1 class="section-title"><span class="epoch-bar epoch-rnn"></span>RNN / LSTM</h1>
+    <p class="section-sub">1986–1997 — нейронная сеть с памятью о прошлом</p>
+
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-rnn">RNN</button>
+      <button class="mode-btn" id="btn-lstm">LSTM</button>
+    </div>
+
+    <!-- Architecture diagram -->
+    <div class="card">
+      <div class="card-title" id="diagram-title">Архитектура RNN
+        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">hidden state
+          <button class="hint-btn" data-hint="Hidden state — ‘рабочая память’ сети. Передаётся от шага к шагу как эстафетная палочка. Но палочка маленькая — много не унесёт.">?</button>
+        </span>
+      </div>
+      <!-- RNN SVG -->
+      <div class="rnn-svg-wrap" id="svg-rnn">
+        <svg class="diagram-svg" viewBox="0 0 680 180" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arr"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#30363d"/></marker>
+            <marker id="arrH" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
+          </defs>
+          <text x="60"  y="168" class="token-label" text-anchor="middle">кузнец</text>
+          <text x="190" y="168" class="token-label" text-anchor="middle">ковал</text>
+          <text x="320" y="168" class="token-label" text-anchor="middle">железо</text>
+          <text x="450" y="168" class="token-label" text-anchor="middle">пока</text>
+          <text x="580" y="168" class="token-label" text-anchor="middle">железо</text>
+          <line x1="60"  y1="156" x2="60"  y2="122" class="arr"/>
+          <line x1="190" y1="156" x2="190" y2="122" class="arr"/>
+          <line x1="320" y1="156" x2="320" y2="122" class="arr"/>
+          <line x1="450" y1="156" x2="450" y2="122" class="arr"/>
+          <line x1="580" y1="156" x2="580" y2="122" class="arr"/>
+          <rect x="30"  y="80" width="60" height="40" rx="6" class="rnn-cell"/>
+          <rect x="160" y="80" width="60" height="40" rx="6" class="rnn-cell"/>
+          <rect x="290" y="80" width="60" height="40" rx="6" class="rnn-cell"/>
+          <rect x="420" y="80" width="60" height="40" rx="6" class="rnn-cell"/>
+          <rect x="550" y="80" width="60" height="40" rx="6" class="rnn-cell"/>
+          <text x="60"  y="104" class="node-label" text-anchor="middle">h₁</text>
+          <text x="190" y="104" class="node-label" text-anchor="middle">h₂</text>
+          <text x="320" y="104" class="node-label" text-anchor="middle">h₃</text>
+          <text x="450" y="104" class="node-label" text-anchor="middle">h₄</text>
+          <text x="580" y="104" class="node-label" text-anchor="middle">h₅</text>
+          <line x1="90"  y1="100" x2="158" y2="100" class="arr-h anim"/>
+          <line x1="220" y1="100" x2="288" y2="100" class="arr-h anim"/>
+          <line x1="350" y1="100" x2="418" y2="100" class="arr-h anim"/>
+          <line x1="480" y1="100" x2="548" y2="100" class="arr-h anim"/>
+          <line x1="580" y1="80" x2="580" y2="50" class="arr"/>
+          <rect x="548" y="30" width="64" height="22" rx="4" fill="var(--bg-hover)" stroke="var(--border)" stroke-width="1"/>
+          <text x="580" y="45" font-family="Segoe UI" font-size="11" fill="var(--text-muted)" text-anchor="middle">y (next)</text>
+        </svg>
+      </div>
+      <!-- LSTM SVG -->
+      <div class="rnn-svg-wrap" id="svg-lstm" style="display:none">
+        <svg class="diagram-svg" viewBox="0 0 680 230" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrHL" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#9b59b6"/></marker>
+            <marker id="arrC"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#f1948a"/></marker>
+          </defs>
+          <text x="60"  y="220" class="token-label" text-anchor="middle">кузнец</text>
+          <text x="190" y="220" class="token-label" text-anchor="middle">ковал</text>
+          <text x="320" y="220" class="token-label" text-anchor="middle">железо</text>
+          <text x="450" y="220" class="token-label" text-anchor="middle">пока</text>
+          <text x="580" y="220" class="token-label" text-anchor="middle">железо</text>
+          <line x1="60"  y1="210" x2="60"  y2="176" class="arr"/>
+          <line x1="190" y1="210" x2="190" y2="176" class="arr"/>
+          <line x1="320" y1="210" x2="320" y2="176" class="arr"/>
+          <line x1="450" y1="210" x2="450" y2="176" class="arr"/>
+          <line x1="580" y1="210" x2="580" y2="176" class="arr"/>
+          <rect x="30"  y="120" width="60" height="55" rx="6" class="rnn-cell-lstm"/>
+          <rect x="160" y="120" width="60" height="55" rx="6" class="rnn-cell-lstm"/>
+          <rect x="290" y="120" width="60" height="55" rx="6" class="rnn-cell-lstm"/>
+          <rect x="420" y="120" width="60" height="55" rx="6" class="rnn-cell-lstm"/>
+          <rect x="550" y="120" width="60" height="55" rx="6" class="rnn-cell-lstm"/>
+          <text x="60"  y="140" class="node-label-lstm" text-anchor="middle">h</text>
+          <text x="60"  y="154" class="gate-label" text-anchor="middle">f·i·g·o</text>
+          <text x="190" y="140" class="node-label-lstm" text-anchor="middle">h</text>
+          <text x="190" y="154" class="gate-label" text-anchor="middle">f·i·g·o</text>
+          <text x="320" y="140" class="node-label-lstm" text-anchor="middle">h</text>
+          <text x="320" y="154" class="gate-label" text-anchor="middle">f·i·g·o</text>
+          <text x="450" y="140" class="node-label-lstm" text-anchor="middle">h</text>
+          <text x="450" y="154" class="gate-label" text-anchor="middle">f·i·g·o</text>
+          <text x="580" y="140" class="node-label-lstm" text-anchor="middle">h</text>
+          <text x="580" y="154" class="gate-label" text-anchor="middle">f·i·g·o</text>
+          <line x1="90"  y1="150" x2="158" y2="150" class="arr-hl anim"/>
+          <line x1="220" y1="150" x2="288" y2="150" class="arr-hl anim"/>
+          <line x1="350" y1="150" x2="418" y2="150" class="arr-hl anim"/>
+          <line x1="480" y1="150" x2="548" y2="150" class="arr-hl anim"/>
+          <line x1="90"  y1="125" x2="158" y2="125" class="arr-c anim"/>
+          <line x1="220" y1="125" x2="288" y2="125" class="arr-c anim"/>
+          <line x1="350" y1="125" x2="418" y2="125" class="arr-c anim"/>
+          <line x1="480" y1="125" x2="548" y2="125" class="arr-c anim"/>
+          <text x="10" y="128" font-family="Segoe UI" font-size="10" fill="#f1948a">c</text>
+          <text x="10" y="153" font-family="Segoe UI" font-size="10" fill="#9b59b6">h</text>
+          <line x1="580" y1="120" x2="580" y2="85" class="arr"/>
+          <rect x="548" y="64" width="64" height="22" rx="4" fill="var(--bg-hover)" stroke="var(--border)" stroke-width="1"/>
+          <text x="580" y="79" font-family="Segoe UI" font-size="11" fill="var(--text-muted)" text-anchor="middle">y (next)</text>
+          <line x1="20" y1="30" x2="50" y2="30" class="arr-c"/>
+          <text x="55" y="34" font-family="Segoe UI" font-size="10" fill="#f1948a">cell state c (долговременная память)</text>
+          <line x1="20" y1="48" x2="50" y2="48" class="arr-hl"/>
+          <text x="55" y="52" font-family="Segoe UI" font-size="10" fill="#9b59b6">hidden state h (краткосрочная)</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Hidden size slider -->
+    <div class="card">
+      <div class="card-title">Слайдер ёмкости
+        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">hidden size
+          <button class="hint-btn" data-hint="Hidden size — сколько ‘ячеек’ в рабочей памяти. Больше ячеек = больше деталей может удержать.">?</button>
+        </span>
+      </div>
+      <div class="slider-wrap">
+        <span class="slider-label">Hidden =</span>
+        <input type="range" id="hidden-size" min="0" max="3" value="1" step="1">
+        <span class="slider-value" id="hidden-size-val">8</span>
+        <span style="font-size:13px;color:var(--text-muted);margin-left:8px;">нейронов в слое</span>
+      </div>
+    </div>
+
+    <!-- Generation -->
+    <div class="card">
+      <div class="card-title">Генерация</div>
+      <div class="controls-row">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:14px;color:var(--text-muted);">Начать со слова:</span>
+          <input type="text" id="start-word" class="word-input" value="железо" list="corpus-words">
+          <datalist id="corpus-words">
+            <option value="кузнец"><option value="ковал"><option value="железо">
+            <option value="горячим"><option value="молот"><option value="форму">
+          </datalist>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:14px;color:var(--text-muted);">Слов:</span>
+          <input type="range" id="words-count" min="1" max="20" value="5" step="1" style="width:80px;">
+          <span id="words-count-val" style="font-size:14px;font-weight:600;min-width:20px;">5</span>
+        </div>
+        <button class="btn btn-primary" id="generate-btn">▶ Генерировать</button>
+      </div>
+      <div class="result-box" id="generation-result" style="min-height:52px;line-height:2;">
+        <span style="color:var(--text-muted);">Нажмите «Генерировать»</span>
+      </div>
+    </div>
+
+    <!-- Problem callout -->
+    <div class="card">
+      <div class="card-title">Проблема RNN: затухающий градиент
+        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">vanishing gradient
+          <button class="hint-btn" data-hint="Градиент — сигнал обратной связи при обучении. Когда он проходит через много шагов — затухает как эхо в длинном коридоре.">?</button>
+        </span>
+      </div>
+      <div class="callout warn">
+        <strong>Долгий путь → слабый сигнал:</strong> hidden state передаётся через умножения.
+        При длинных последовательностях сигнал затухает — ранние токены почти не влияют на предсказание.<br><br>
+        <strong>Это не жёсткий обрыв</strong>, как у N-gram, а постепенная деградация.
+        «Кузнец» к концу предложения помнится хуже, чем «горячим».
+      </div>
+    </div>
+
+    <!-- RNN vs Transformer table -->
+    <div class="card">
+      <div class="card-title">RNN vs Transformer</div>
+      <table class="cmp">
+        <thead><tr>
+          <th>Аспект</th>
+          <th style="color:var(--epoch-rnn)">RNN / LSTM</th>
+          <th style="color:#58a6ff">Transformer</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Доступ к прошлому</td><td class="tm">Затухающий</td><td class="tg">Равный (Attention)</td></tr>
+          <tr><td>Параллелизм</td><td class="tb">Нет (последовательно)</td><td class="tg">Да (все токены сразу)</td></tr>
+          <tr><td>Длинные зависимости</td><td class="tm">Частично (LSTM)</td><td class="tg">Хорошо</td></tr>
+          <tr><td>Скорость обучения</td><td class="tb">Медленно</td><td class="tg">Быстро (GPU)</td></tr>
+          <tr><td>Параметров</td><td class="tg">Мало</td><td class="tb">Миллиарды</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- LSTM gate explanation (only in LSTM mode) -->
+    <div class="card" id="lstm-explain" style="display:none">
+      <div class="card-title">LSTM: ворота забывания
+        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">forget gate
+          <button class="hint-btn" data-hint="Forget gate — ‘вентиль’ который решает, что оставить в памяти, а что выбросить. Как человек, который решает что записать в блокнот, а что нет.">?</button>
+        </span>
+      </div>
+      <div class="callout" style="border-color:var(--epoch-rnn)">
+        LSTM добавляет <strong>cell state (c)</strong> — долгосрочную ленту памяти отдельно от hidden state.
+        Четыре вентиля управляют потоком:<br><br>
+        <strong>f</strong> (forget) — что забыть из прошлого<br>
+        <strong>i</strong> (input) — что записать из нового входа<br>
+        <strong>g</strong> (gate) — кандидаты для записи<br>
+        <strong>o</strong> (output) — что выдать наружу<br><br>
+        Благодаря прямому градиентному пути через c сеть лучше обучается на длинных последовательностях.
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/nav.js"></script>
+  <script src="/static/utils.js"></script>
+  <script src="/static/tooltip.js"></script>
+  <script>
+    const HIDDEN_SIZES = [4, 8, 16, 32];
+    let currentMode = "rnn";
+
+    document.getElementById("btn-rnn").addEventListener("click", () => setMode("rnn"));
+    document.getElementById("btn-lstm").addEventListener("click", () => setMode("lstm"));
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById("btn-rnn").classList.toggle("active", mode === "rnn");
+      document.getElementById("btn-lstm").classList.toggle("active", mode === "lstm");
+      document.getElementById("svg-rnn").style.display = mode === "rnn" ? "" : "none";
+      document.getElementById("svg-lstm").style.display = mode === "lstm" ? "" : "none";
+      const titleEl = document.getElementById("diagram-title");
+      titleEl.childNodes[0].textContent = mode === "rnn" ? "Архитектура RNN" : "Архитектура LSTM";
+      document.getElementById("lstm-explain").style.display = mode === "lstm" ? "" : "none";
+    }
+
+    const hiddenSlider = document.getElementById("hidden-size");
+    const hiddenVal = document.getElementById("hidden-size-val");
+    hiddenSlider.addEventListener("input", () => {
+      hiddenVal.textContent = HIDDEN_SIZES[parseInt(hiddenSlider.value)];
+    });
+
+    const wordsSlider = document.getElementById("words-count");
+    const wordsVal = document.getElementById("words-count-val");
+    wordsSlider.addEventListener("input", () => { wordsVal.textContent = wordsSlider.value; });
+
+    async function generate() {
+      const resultEl = document.getElementById("generation-result");
+      const start = document.getElementById("start-word").value.trim() || "железо";
+      const hiddenSize = HIDDEN_SIZES[parseInt(hiddenSlider.value)];
+      const words = parseInt(wordsSlider.value);
+      const seed = typeof getSeed === "function" ? getSeed() : 42;
+
+      const endpoint = currentMode === "lstm"
+        ? `/api/rnn/lstm/generate?hidden_size=${hiddenSize}&start=${encodeURIComponent(start)}&words=${words}&seed=${seed}`
+        : `/api/rnn/generate?hidden_size=${hiddenSize}&start=${encodeURIComponent(start)}&words=${words}&seed=${seed}`;
+
+      showLoading(resultEl);
+      try {
+        const data = await apiFetch(endpoint);
+        const allTokens = [data.start, ...data.words];
+        resultEl.innerHTML = allTokens.map((w, i) =>
+          `<span class="gen-token ${i === 0 ? "seed" : ""}">${w}</span>`
+        ).join(" ");
+        const newEls = Array.from(resultEl.querySelectorAll(".gen-token:not(.seed)"));
+        animateFlow(newEls, {
+          delay: 400, cls: "active", keep: false,
+          onStep: el => el.classList.add("active"),
+          onDone: () => newEls.forEach(el => el.classList.add("done")),
+        });
+        if (data.fallback_used) {
+          const note = document.createElement("div");
+          note.style.cssText = "font-size:12px;color:var(--text-muted);margin-top:6px;";
+          note.textContent = `Слово "${start}" не найдено в корпусе, использован: "${data.start}"`;
+          resultEl.appendChild(note);
+        }
+      } catch(e) {
+        showError(resultEl, e.message);
+      }
+    }
+
+    document.getElementById("generate-btn").addEventListener("click", generate);
+    document.addEventListener("animate", generate);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      hiddenVal.textContent = HIDDEN_SIZES[parseInt(hiddenSlider.value)];
+      initTooltips(document.getElementById("main-content"));
+    });
+  </script>
+</body>
+</html>
