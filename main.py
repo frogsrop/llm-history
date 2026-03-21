@@ -7,7 +7,7 @@ from pathlib import Path
 # --- Routers are uncommented as steps 4–7 are implemented ---
 from routers import ngram
 from routers import rnn
-# from routers import embeddings
+from routers import embeddings
 # from routers import llm_era
 
 app = FastAPI(title="LLM Evolution Explainer")
@@ -16,6 +16,7 @@ app = FastAPI(title="LLM Evolution Explainer")
 @app.on_event("startup")
 async def startup_event():
     rnn.start_pretraining()
+    embeddings.start_loading()
 
 
 BASE_DIR = Path(__file__).parent
@@ -25,7 +26,7 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 # --- Register routers ---
 app.include_router(ngram.router, prefix="/api/ngram", tags=["ngram"])
 app.include_router(rnn.router, prefix="/api/rnn", tags=["rnn"])
-# app.include_router(embeddings.router, prefix="/api/embeddings", tags=["embeddings"])
+app.include_router(embeddings.router, prefix="/api/embeddings", tags=["embeddings"])
 # app.include_router(llm_era.router, prefix="/api/llm-era", tags=["llm-era"])
 
 

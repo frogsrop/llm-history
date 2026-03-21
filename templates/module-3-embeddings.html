@@ -4,6 +4,145 @@
   <meta charset="UTF-8">
   <title>Эмбеддинги — LLM Evolution</title>
   <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* ── Canvas word map ─────────────────────────────────── */
+    .map-wrap {
+      position: relative;
+      margin: 16px 0;
+    }
+    #word-canvas {
+      width: 100%;
+      height: 520px;
+      cursor: grab;
+    }
+    #word-canvas.grabbing { cursor: grabbing; }
+    #reset-zoom {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color var(--transition), color var(--transition);
+      z-index: 2;
+      display: none;
+    }
+    #reset-zoom:hover { border-color: var(--epoch-embeddings); color: var(--epoch-embeddings); }
+    .map-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .map-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .map-legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+
+    /* ── Analogy input ───────────────────────────────────── */
+    .analogy-wrap {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+    #analogy-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 15px;
+      padding: 8px 14px;
+      flex: 1;
+      min-width: 200px;
+      outline: none;
+      transition: border-color var(--transition);
+    }
+    #analogy-input:focus { border-color: var(--epoch-embeddings); }
+
+    .example-btn {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color var(--transition), color var(--transition);
+    }
+    .example-btn:hover {
+      border-color: var(--epoch-embeddings);
+      color: var(--epoch-embeddings);
+    }
+
+    /* ── Result highlight ────────────────────────────────── */
+    #analogy-result {
+      min-height: 40px;
+    }
+    .analogy-result-word {
+      color: var(--epoch-embeddings);
+      font-weight: 700;
+      font-size: 18px;
+    }
+    .analogy-score {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-left: 8px;
+    }
+    .top5-list {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .top5-item {
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    /* ── Before/after comparison ──────────────────────────── */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 16px;
+    }
+    .compare-col h4 {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .index-table td { font-family: monospace; font-size: 13px; }
+    .index-table td:first-child { color: var(--epoch-embeddings); font-weight: 600; }
+    .index-table td:last-child { color: var(--text-muted); }
+
+    /* ── Loading overlay ─────────────────────────────────── */
+    .loading-overlay {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: var(--text-muted);
+      font-size: 16px;
+    }
+    .loading-overlay.hidden { display: none; }
+  </style>
 </head>
 <body>
   <nav id="sidebar"></nav>
@@ -12,12 +151,467 @@
       <span class="epoch-bar epoch-embeddings"></span>Word2Vec / Эмбеддинги
     </h1>
     <p class="section-sub">2013 — слова как точки в пространстве смысла</p>
+
+    <!-- Idea card -->
     <div class="card">
-      <p style="color:var(--text-muted)">Модуль реализуется на Шаге 6.</p>
+      <div class="card-title">Идея
+        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">word embedding
+          <button class="hint-btn" data-hint="Эмбеддинг — это когда каждое слово становится точкой в многомерном пространстве. Близкие по смыслу слова оказываются рядом, как города на карте.">?</button>
+        </span>
+      </div>
+      <p style="color:var(--text-muted);font-size:14px;line-height:1.7;">
+        Раньше для компьютера слова были просто номерами: «кот» = 5, «собака» = 12 — никакой связи.
+        <strong style="color:var(--text);">Word2Vec</strong> превращает каждое слово в вектор из 300 чисел.
+        Близкие по смыслу слова получают похожие векторы — и это позволяет делать арифметику смыслов.
+      </p>
     </div>
+
+    <!-- 2D Word Map -->
+    <div class="card">
+      <div class="card-title">Карта слов
+        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">PCA проекция
+          <button class="hint-btn" data-hint="300-мерное пространство сжато до 2D для визуализации. Расстояния приблизительные, но кластеры сохраняются.">?</button>
+        </span>
+      </div>
+      <div id="map-loading" class="loading-overlay">Загрузка модели fastText (~7GB)…</div>
+      <div id="map-content" style="display:none;">
+        <div class="map-wrap">
+          <canvas id="word-canvas"></canvas>
+          <button id="reset-zoom">Сбросить масштаб</button>
+        </div>
+        <div class="map-legend" id="map-legend"></div>
+      </div>
+    </div>
+
+    <!-- Analogy arithmetic -->
+    <div class="card">
+      <div class="card-title">Арифметика смыслов
+        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">vector arithmetic
+          <button class="hint-btn" data-hint="Если из вектора «король» вычесть «мужчина» и прибавить «женщина», получится вектор ближе всего к «королева». Смысл кодируется как направление в пространстве.">?</button>
+        </span>
+      </div>
+      <div class="analogy-wrap">
+        <input type="text" id="analogy-input" placeholder="король - мужчина + женщина" autocomplete="off">
+        <button class="btn btn-primary" id="analogy-btn">= ?</button>
+      </div>
+      <div style="margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--text-muted);">Примеры:</span>
+        <button class="example-btn" data-expr="король - мужчина + женщина">король − мужчина + женщина</button>
+        <button class="example-btn" data-expr="кот - он + она">кот − он + она</button>
+        <button class="example-btn" data-expr="Москва - Россия + Франция">Москва − Россия + Франция</button>
+      </div>
+      <div class="result-box" id="analogy-result">
+        <span style="color:var(--text-muted);">Введите выражение и нажмите «= ?»</span>
+      </div>
+    </div>
+
+    <!-- Before / After comparison -->
+    <div class="card">
+      <div class="card-title">До и после: индексы vs. векторы</div>
+      <div class="compare-grid">
+        <div class="compare-col">
+          <h4>Раньше: таблица индексов</h4>
+          <table class="index-table">
+            <tr><td>кот</td><td>→ 1</td></tr>
+            <tr><td>собака</td><td>→ 2</td></tr>
+            <tr><td>король</td><td>→ 3</td></tr>
+            <tr><td>королева</td><td>→ 4</td></tr>
+          </table>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">Числа случайные. «Кот» и «собака» так же далеки, как «кот» и «король».</p>
+        </div>
+        <div class="compare-col">
+          <h4>После: векторы близости</h4>
+          <table class="index-table">
+            <tr><td>кот</td><td>→ [0.23, −0.41, 0.89, …]</td></tr>
+            <tr><td>собака</td><td>→ [0.25, −0.38, 0.85, …]</td></tr>
+            <tr><td>король</td><td>→ [0.71, 0.55, −0.12, …]</td></tr>
+            <tr><td>королева</td><td>→ [0.68, 0.62, −0.09, …]</td></tr>
+          </table>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">Близкие по смыслу слова — близкие векторы. Арифметика работает!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Problem callout -->
+    <div class="card">
+      <div class="card-title">Ограничение Word2Vec</div>
+      <div class="callout warn">
+        Каждое слово имеет <strong>ровно один вектор</strong>, независимо от контекста.<br>
+        «Ключ» (от двери) и «ключ» (родник) — одна и та же точка на карте.<br>
+        Эту проблему решат <strong>контекстуальные эмбеддинги</strong> (BERT, GPT) в следующем модуле.
+      </div>
+    </div>
+
   </main>
   <script src="/static/nav.js"></script>
   <script src="/static/utils.js"></script>
   <script src="/static/tooltip.js"></script>
+  <script>
+    // ── Group colors ─────────────────────────────────────────────────────────
+    const GROUP_COLORS = {
+      animals:     "#FACC15",
+      people:      "#F87171",
+      actions:     "#34D399",
+      nature:      "#60A5FA",
+      adjectives:  "#C084FC",
+      places:      "#FB923C",
+      frequent:    "#555e6b",
+    };
+    const GROUP_LABELS = {
+      animals:     "Животные",
+      people:      "Люди и роли",
+      actions:     "Действия",
+      nature:      "Природа",
+      adjectives:  "Прилагательные",
+      places:      "Места и вещи",
+      frequent:    "Частотные слова",
+    };
+    const CURATED_GROUPS = new Set(["animals","people","actions","nature","adjectives","places"]);
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let wordData = [];
+    let highlightWord = null;    // word under cursor
+    let analogyResult = null;    // result word to highlight on map
+
+    // Zoom & pan state
+    let scale = 1;
+    let offsetX = 0;
+    let offsetY = 0;
+    let isDragging = false;
+    let dragStartX = 0, dragStartY = 0;
+    const MIN_SCALE = 0.5, MAX_SCALE = 500;
+
+    const canvas = document.getElementById("word-canvas");
+    const ctx = canvas.getContext("2d");
+    const resetBtn = document.getElementById("reset-zoom");
+    const PADDING = 50;
+
+    // ── Canvas helpers ───────────────────────────────────────────────────────
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = 520;
+    }
+
+    // World coords [0,1] → canvas pixel coords (with zoom & pan applied)
+    function toCanvasX(x) {
+      const wx = PADDING + x * (canvas.width - 2 * PADDING);
+      return (wx + offsetX) * scale + canvas.width * (1 - scale) / 2;
+    }
+    function toCanvasY(y) {
+      const wy = PADDING + y * (canvas.height - 2 * PADDING);
+      return (wy + offsetY) * scale + canvas.height * (1 - scale) / 2;
+    }
+
+    function updateResetBtn() {
+      resetBtn.style.display = (scale !== 1 || offsetX !== 0 || offsetY !== 0) ? "block" : "none";
+    }
+
+    // Parse hex color to [r,g,b]
+    const _colorCache = {};
+    function hexToRgb(hex) {
+      if (_colorCache[hex]) return _colorCache[hex];
+      const n = parseInt(hex.slice(1), 16);
+      const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+      _colorCache[hex] = rgb;
+      return rgb;
+    }
+
+    function drawMap() {
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      // Phase 1: draw all frequent dots as raw pixels via ImageData (fast)
+      const imgData = ctx.createImageData(W, H);
+      const pixels = imgData.data;
+      const freqRgb = hexToRgb(GROUP_COLORS.frequent);
+
+      for (let i = 0; i < wordData.length; i++) {
+        const w = wordData[i];
+        if (CURATED_GROUPS.has(w.group)) continue; // draw curated separately
+        const px = Math.round(toCanvasX(w.x));
+        const py = Math.round(toCanvasY(w.y));
+        if (px < 0 || px >= W || py < 0 || py >= H) continue;
+        const idx = (py * W + px) * 4;
+        pixels[idx]     = freqRgb[0];
+        pixels[idx + 1] = freqRgb[1];
+        pixels[idx + 2] = freqRgb[2];
+        pixels[idx + 3] = 100;
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      // Phase 2: draw curated dots + highlighted word + analogy result with canvas API
+      const fontSize = Math.max(10, Math.min(16, 12 * scale));
+      const fontBold = Math.max(11, Math.min(18, 13 * scale));
+      const showFrequentLabels = scale >= 8;
+
+      // If a frequent word is highlighted, draw it
+      const specials = [highlightWord, analogyResult].filter(Boolean);
+
+      for (const w of wordData) {
+        const isCurated = CURATED_GROUPS.has(w.group);
+        const isHighlight = w.word === highlightWord;
+        const isResult = w.word === analogyResult;
+        if (!isCurated && !isHighlight && !isResult) continue;
+
+        const cx = toCanvasX(w.x);
+        const cy = toCanvasY(w.y);
+        if (cx < -40 || cx > W + 40 || cy < -20 || cy > H + 20) continue;
+
+        const color = GROUP_COLORS[w.group] || "#888";
+        const baseRadius = isCurated ? 2.5 : 1.5;
+        const radius = (isHighlight || isResult ? 5 : baseRadius) * Math.min(scale, 2);
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = isHighlight || isResult ? 1 : 0.7;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        if (isResult) {
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        const showLabel = isHighlight || isResult || isCurated;
+        if (showLabel) {
+          ctx.font = (isHighlight || isResult)
+            ? `bold ${fontBold.toFixed(0)}px Segoe UI`
+            : `${fontSize.toFixed(0)}px Segoe UI`;
+          ctx.fillStyle = isHighlight || isResult ? "#fff" : color;
+          ctx.globalAlpha = isHighlight || isResult ? 1 : 0.85;
+          ctx.textAlign = "center";
+          ctx.fillText(w.word, cx, cy - radius - 4);
+          ctx.globalAlpha = 1;
+        }
+      }
+
+      // Phase 3: labels for frequent words when zoomed in far enough
+      if (showFrequentLabels) {
+        ctx.font = `${fontSize.toFixed(0)}px Segoe UI`;
+        ctx.fillStyle = GROUP_COLORS.frequent;
+        ctx.globalAlpha = 0.6;
+        ctx.textAlign = "center";
+        for (const w of wordData) {
+          if (CURATED_GROUPS.has(w.group)) continue;
+          const cx = toCanvasX(w.x);
+          const cy = toCanvasY(w.y);
+          if (cx < -20 || cx > W + 20 || cy < -10 || cy > H + 10) continue;
+          ctx.fillText(w.word, cx, cy - 6);
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // ── Zoom (wheel) ─────────────────────────────────────────────────────────
+    canvas.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * zoomFactor));
+      if (newScale === scale) return;
+
+      // Adjust offset so the point under cursor stays fixed
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      // Before zoom: screenX = (worldX + offsetX) * scale + cx*(1-scale)
+      // We want the world point under (mx, my) to stay at (mx, my) after zoom change
+      // worldPx = (mx - cx*(1-scale)) / scale - offsetX
+      const worldPxX = (mx - cx * (1 - scale)) / scale - offsetX;
+      const worldPxY = (my - cy * (1 - scale)) / scale - offsetY;
+
+      // After zoom: mx = (worldPxX + newOffsetX) * newScale + cx*(1-newScale)
+      // newOffsetX = (mx - cx*(1-newScale)) / newScale - worldPxX
+      offsetX = (mx - cx * (1 - newScale)) / newScale - worldPxX;
+      offsetY = (my - cy * (1 - newScale)) / newScale - worldPxY;
+      scale = newScale;
+
+      updateResetBtn();
+      drawMap();
+    }, { passive: false });
+
+    // ── Pan (drag) ───────────────────────────────────────────────────────────
+    canvas.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      canvas.classList.add("grabbing");
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (isDragging) {
+        const dx = (e.clientX - dragStartX) / scale;
+        const dy = (e.clientY - dragStartY) / scale;
+        offsetX += dx;
+        offsetY += dy;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        updateResetBtn();
+        drawMap();
+        return;
+      }
+
+      // Hover detection — convert mouse to world coords, search nearby
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      let closest = null;
+      let closestDist = 20;
+
+      // Only check visible words (within canvas bounds + margin)
+      const W = canvas.width, H = canvas.height;
+      for (let i = 0; i < wordData.length; i++) {
+        const w = wordData[i];
+        const cx = toCanvasX(w.x);
+        const cy = toCanvasY(w.y);
+        if (cx < -10 || cx > W + 10 || cy < -10 || cy > H + 10) continue;
+        const d = Math.hypot(mx - cx, my - cy);
+        if (d < closestDist) {
+          closestDist = d;
+          closest = w.word;
+        }
+      }
+
+      if (closest !== highlightWord) {
+        highlightWord = closest;
+        drawMap();
+      }
+    });
+
+    canvas.addEventListener("mouseup", () => {
+      isDragging = false;
+      canvas.classList.remove("grabbing");
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      isDragging = false;
+      canvas.classList.remove("grabbing");
+      highlightWord = null;
+      drawMap();
+    });
+
+    // ── Reset zoom button ────────────────────────────────────────────────────
+    resetBtn.addEventListener("click", () => {
+      scale = 1;
+      offsetX = 0;
+      offsetY = 0;
+      updateResetBtn();
+      drawMap();
+    });
+
+    // ── Load word map ────────────────────────────────────────────────────────
+    async function loadMap() {
+      const loadingEl = document.getElementById("map-loading");
+      const contentEl = document.getElementById("map-content");
+
+      // Poll until model is ready
+      while (true) {
+        try {
+          const status = await apiFetch("/api/embeddings/status");
+          if (status.ready) break;
+        } catch {}
+        await new Promise(r => setTimeout(r, 2000));
+      }
+
+      const data = await apiFetch("/api/embeddings/map");
+      if (data.error) {
+        loadingEl.textContent = data.error;
+        return;
+      }
+
+      wordData = data.words;
+      loadingEl.classList.add("hidden");
+      contentEl.style.display = "block";
+
+      resizeCanvas();
+      drawMap();
+      buildLegend();
+    }
+
+    function buildLegend() {
+      const el = document.getElementById("map-legend");
+      el.innerHTML = "";
+      for (const [group, label] of Object.entries(GROUP_LABELS)) {
+        const color = GROUP_COLORS[group];
+        const item = document.createElement("span");
+        item.className = "map-legend-item";
+        item.innerHTML = `<span class="map-legend-dot" style="background:${color}"></span>${label}`;
+        el.appendChild(item);
+      }
+    }
+
+    window.addEventListener("resize", () => {
+      if (wordData.length) {
+        resizeCanvas();
+        drawMap();
+      }
+    });
+
+    // ── Analogy ──────────────────────────────────────────────────────────────
+    async function runAnalogy() {
+      const input = document.getElementById("analogy-input");
+      const resultEl = document.getElementById("analogy-result");
+      const expr = input.value.trim();
+      if (!expr) return;
+
+      showLoading(resultEl);
+
+      try {
+        const data = await apiPost("/api/embeddings/analogy", { expression: expr });
+
+        if (data.error) {
+          resultEl.innerHTML = `<span style="color:var(--epoch-llm)">${escapeHtml(data.error)}</span>`;
+          analogyResult = null;
+          drawMap();
+          return;
+        }
+
+        const r = data.result;
+        let html = `<span class="analogy-result-word">${escapeHtml(r.word)}</span>`;
+        html += `<span class="analogy-score">сходство: ${r.score}</span>`;
+
+        if (data.top5 && data.top5.length > 1) {
+          html += `<div class="top5-list">`;
+          for (const item of data.top5) {
+            const isBest = item.word === r.word;
+            html += `<span class="top5-item" style="${isBest ? 'border-color:var(--epoch-embeddings);color:var(--epoch-embeddings);' : ''}">${escapeHtml(item.word)} (${item.score})</span>`;
+          }
+          html += `</div>`;
+        }
+
+        resultEl.innerHTML = html;
+
+      } catch (err) {
+        showError(resultEl, err.message);
+      }
+    }
+
+    document.getElementById("analogy-btn").addEventListener("click", runAnalogy);
+    document.getElementById("analogy-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") runAnalogy();
+    });
+
+    // Example buttons
+    document.querySelectorAll(".example-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.getElementById("analogy-input").value = btn.dataset.expr;
+        runAnalogy();
+      });
+    });
+
+    // Space → run analogy
+    document.addEventListener("animate", runAnalogy);
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+    document.addEventListener("DOMContentLoaded", () => {
+      initTooltips(document.getElementById("main-content"));
+      loadMap();
+    });
+  </script>
 </body>
 </html>

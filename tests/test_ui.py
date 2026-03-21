@@ -273,17 +273,36 @@ def test_rnn_svg_diagram_present(page, server):
     assert svg.count() >= 1, "SVG diagram not found"
 
 # === Step 6: Embeddings ===
-# def test_embeddings_canvas_not_empty(page, server):
-#     page.goto(server + "/module/3")
-#     page.wait_for_timeout(1500)
-#     not_empty = page.evaluate("""() => {
-#         const canvas = document.querySelector('canvas');
-#         if (!canvas) return false;
-#         const ctx = canvas.getContext('2d');
-#         const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-#         return data.some(v => v !== 0);
-#     }""")
-#     assert not_empty
+def test_embeddings_page_loads(page, server):
+    page.goto(server + "/module/3")
+    page.wait_for_load_state("networkidle")
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    assert errors == [], f"JS errors: {errors}"
+
+def test_embeddings_canvas_not_empty(page, server):
+    page.goto(server + "/module/3")
+    page.wait_for_timeout(15000)
+    not_empty = page.evaluate("""() => {
+        const canvas = document.querySelector('canvas');
+        if (!canvas) return false;
+        const ctx = canvas.getContext('2d');
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        return data.some(v => v !== 0);
+    }""")
+    assert not_empty
+
+def test_embeddings_analogy_input(page, server):
+    page.goto(server + "/module/3")
+    page.wait_for_timeout(2000)
+    inp = page.locator("#analogy-input")
+    assert inp.count() == 1, "Analogy input not found"
+
+def test_embeddings_example_buttons(page, server):
+    page.goto(server + "/module/3")
+    page.wait_for_timeout(2000)
+    btns = page.locator(".example-btn")
+    assert btns.count() >= 2, f"Expected at least 2 example buttons, found {btns.count()}"
 
 # === Step 7: LLM ===
 # def test_llm_toggle_attention(page, server):

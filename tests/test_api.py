@@ -146,15 +146,43 @@ def test_rnn_unknown_start_fallback(client):
 
 
 # --- Embeddings API (Step 6) ---
-# def test_embeddings_map(client):
-#     r = client.get("/api/embeddings/map")
-#     assert r.status_code == 200
-#     data = r.json()
-#     assert "words" in data
+def test_embeddings_map(client):
+    r = client.get("/api/embeddings/map")
+    assert r.status_code == 200
+    data = r.json()
+    assert "words" in data
+    assert len(data["words"]) > 20
+    # Each word has name, x, y, group
+    w = data["words"][0]
+    assert "word" in w
+    assert "x" in w
+    assert "y" in w
+    assert "group" in w
 
-# def test_embeddings_analogy(client):
-#     r = client.post("/api/embeddings/analogy", json={"expression": "king - man + woman"})
-#     assert r.status_code == 200
+def test_embeddings_analogy(client):
+    r = client.post("/api/embeddings/analogy", json={"expression": "король - мужчина + женщина"})
+    assert r.status_code == 200
+    data = r.json()
+    assert "result" in data
+    assert "word" in data["result"]
+
+def test_embeddings_analogy_empty_expression(client):
+    r = client.post("/api/embeddings/analogy", json={"expression": ""})
+    assert r.status_code == 200
+    data = r.json()
+    assert "error" in data
+
+def test_embeddings_analogy_simple_addition(client):
+    r = client.post("/api/embeddings/analogy", json={"expression": "кот + собака"})
+    assert r.status_code == 200
+    data = r.json()
+    assert "result" in data
+
+def test_embeddings_status(client):
+    r = client.get("/api/embeddings/status")
+    assert r.status_code == 200
+    data = r.json()
+    assert "ready" in data
 
 
 # --- LLM-era API (Step 7) ---

@@ -18,9 +18,18 @@ MODELS_DIR = Path(__file__).parent / "models"
 MODELS_DIR.mkdir(exist_ok=True)
 
 RUGPT3_MODEL_ID = "ai-forever/rugpt3xl"
-FASTTEXT_URL = "https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.ru.300.bin.gz"
-FASTTEXT_GZ  = MODELS_DIR / "cc.ru.300.bin.gz"
-FASTTEXT_BIN = MODELS_DIR / "cc.ru.300.bin"
+FASTTEXT_RU_URL = "https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.ru.300.bin.gz"
+FASTTEXT_RU_GZ  = MODELS_DIR / "cc.ru.300.bin.gz"
+FASTTEXT_RU_BIN = MODELS_DIR / "cc.ru.300.bin"
+
+FASTTEXT_EN_URL = "https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.en.300.bin.gz"
+FASTTEXT_EN_GZ  = MODELS_DIR / "cc.en.300.bin.gz"
+FASTTEXT_EN_BIN = MODELS_DIR / "cc.en.300.bin"
+
+# Active fastText model (used by embeddings router)
+FASTTEXT_URL = FASTTEXT_EN_URL
+FASTTEXT_GZ  = FASTTEXT_EN_GZ
+FASTTEXT_BIN = FASTTEXT_EN_BIN
 
 
 def download_rugpt3():

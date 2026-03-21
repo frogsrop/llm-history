@@ -66,6 +66,26 @@ def server():
     else:
         print(f"[conftest] WARNING: RNN models NOT ready after {RNN_TIMEOUT}s — API tests will fail", flush=True)
 
+    # Wait for embeddings model to be ready (fastText ~7GB, can take a while)
+    EMB_TIMEOUT = 600
+    emb_deadline = time.time() + EMB_TIMEOUT
+    print(f"\n[conftest] Waiting for embeddings model (up to {EMB_TIMEOUT}s)...", flush=True)
+    emb_ready = False
+    while time.time() < emb_deadline:
+        try:
+            r = httpx.get(f"{SERVER_URL}/api/embeddings/status", timeout=2)
+            if r.status_code == 200 and r.json().get("ready"):
+                emb_ready = True
+                break
+        except Exception:
+            pass
+        time.sleep(3)
+
+    if emb_ready:
+        print(f"[conftest] Embeddings model ready after {int(time.time() - (emb_deadline - EMB_TIMEOUT))}s", flush=True)
+    else:
+        print(f"[conftest] WARNING: Embeddings model NOT ready after {EMB_TIMEOUT}s — embeddings tests will fail", flush=True)
+
     yield SERVER_URL
 
     proc.terminate()

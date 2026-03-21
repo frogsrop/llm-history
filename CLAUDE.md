@@ -81,9 +81,9 @@ Completed steps (see PLAN.md for full checklist):
 - **Step 3** — `index.html`: interactive timeline, module cards, progress bar
 - **Step 4** — `module-1-ngram.html`: N-gram table, generator, seed control
 - **Step 5** — `module-2-rnn-lstm.html`: TinyRNN + TinyLSTM (PyTorch), hidden size slider, SVG animation (corpus-adaptive via /api/rnn/vocab)
+- **Step 6** — `module-3-embeddings.html`: fastText vectors, 2D PCA word map, analogy arithmetic, before/after comparison
 
 Pending:
-- **Step 6** — `module-3-embeddings.html` (fastText vectors, analogy arithmetic)
 - **Step 7** — `module-4-llm-era.html` (attention heatmap, ruGPT-3 generation)
 - **Step 8** — `module-5-compare.html` (side-by-side comparison)
 - **Steps 9–10** — corpus tuning, tooltip texts
