@@ -29,6 +29,9 @@
     .gen-token.active { background:rgba(168,85,247,.3); color:var(--epoch-rnn); font-weight:700; }
     .gen-token.done { background:rgba(168,85,247,.08); color:var(--text); }
     .gen-token.seed { background:rgba(255,255,255,.06); color:var(--text-muted); }
+    .unrolled-live { overflow-x:auto; margin-top:14px; background:var(--bg); border-radius:var(--radius); border:1px solid var(--border); padding:10px 6px 6px; min-height:116px; display:flex; align-items:center; justify-content:flex-start; }
+    .unrolled-live svg { display:block; overflow:visible; }
+    .unrolled-placeholder { color:var(--text-muted); font-size:13px; padding:8px 12px; }
     .word-input { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); padding:8px 12px; font-size:14px; width:160px; outline:none; transition:border-color .2s; }
     .word-input:focus { border-color:var(--epoch-rnn); }
     .controls-row { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
@@ -60,7 +63,7 @@
       </div>
       <!-- RNN SVG -->
       <div class="rnn-svg-wrap" id="svg-rnn">
-        <svg class="diagram-svg" viewBox="0 0 700 278" xmlns="http://www.w3.org/2000/svg">
+        <svg class="diagram-svg" viewBox="0 0 700 182" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <marker id="arr"    markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#30363d"/></marker>
             <marker id="arrH"   markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
@@ -111,38 +114,6 @@
           <!-- Formula + description -->
           <text x="350" y="178" font-family="Segoe UI" font-size="11" fill="var(--text-muted)" text-anchor="middle">h_t = tanh( Wh·h_{t-1} + Wx·x_t ) — одни и те же веса W на каждом шаге</text>
 
-          <!-- ── SEPARATOR ── -->
-          <line x1="20" y1="190" x2="680" y2="190" stroke="var(--border)" stroke-width="1" stroke-dasharray="4,3"/>
-          <text x="350" y="204" font-family="Segoe UI" font-size="11" fill="var(--text-muted)" text-anchor="middle">разворачивается на всю последовательность (weight sharing)</text>
-
-          <!-- ── UNROLLED SEQUENCE ── cx = 65, 185, 305, 425, 545 -->
-          <rect x="30"  y="213" width="70" height="30" rx="4" class="rnn-cell"/>
-          <rect x="150" y="213" width="70" height="30" rx="4" class="rnn-cell"/>
-          <rect x="270" y="213" width="70" height="30" rx="4" class="rnn-cell"/>
-          <rect x="390" y="213" width="70" height="30" rx="4" class="rnn-cell"/>
-          <rect x="510" y="213" width="70" height="30" rx="4" class="rnn-cell"/>
-          <text x="65"  y="232" class="node-label" text-anchor="middle">h₁</text>
-          <text x="185" y="232" class="node-label" text-anchor="middle">h₂</text>
-          <text x="305" y="232" class="node-label" text-anchor="middle">h₃</text>
-          <text x="425" y="232" class="node-label" text-anchor="middle">h₄</text>
-          <text x="545" y="232" class="node-label" text-anchor="middle">h₅</text>
-          <!-- h arrows -->
-          <line x1="100" y1="228" x2="148" y2="228" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)" class="anim"/>
-          <line x1="220" y1="228" x2="268" y2="228" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)" class="anim"/>
-          <line x1="340" y1="228" x2="388" y2="228" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)" class="anim"/>
-          <line x1="460" y1="228" x2="508" y2="228" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)" class="anim"/>
-          <!-- x inputs -->
-          <line x1="65"  y1="258" x2="65"  y2="245" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX)"/>
-          <line x1="185" y1="258" x2="185" y2="245" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX)"/>
-          <line x1="305" y1="258" x2="305" y2="245" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX)"/>
-          <line x1="425" y1="258" x2="425" y2="245" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX)"/>
-          <line x1="545" y1="258" x2="545" y2="245" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX)"/>
-          <!-- Token labels -->
-          <text x="65"  y="270" class="token-label" text-anchor="middle" id="rnn-tok-0">…</text>
-          <text x="185" y="270" class="token-label" text-anchor="middle" id="rnn-tok-1">…</text>
-          <text x="305" y="270" class="token-label" text-anchor="middle" id="rnn-tok-2">…</text>
-          <text x="425" y="270" class="token-label" text-anchor="middle" id="rnn-tok-3">…</text>
-          <text x="545" y="270" class="token-label" text-anchor="middle" id="rnn-tok-4">…</text>
         </svg>
       </div>
       <!-- LSTM SVG -->
@@ -232,6 +203,10 @@
       <div class="result-box" id="generation-result" style="min-height:52px;line-height:2;">
         <span style="color:var(--text-muted);">Нажмите «Генерировать»</span>
       </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:10px;margin-bottom:2px;">Развёртка сети в реальном времени:</div>
+      <div id="unrolled-wrap" class="unrolled-live">
+        <span class="unrolled-placeholder">← здесь появится развёртка после генерации</span>
+      </div>
     </div>
 
     <!-- Problem callout -->
@@ -318,7 +293,191 @@
     const wordsVal = document.getElementById("words-count-val");
     wordsSlider.addEventListener("input", () => { wordsVal.textContent = wordsSlider.value; });
 
+    // ── Unrolled diagram ───────────────────────────────────────────────────────
+    const U_CELL_W = 68, U_GAP = 48, U_STEP = 116;
+    const U_IO_X_IN  = 18;  // x offset for input connection point (left third of cell)
+    const U_IO_X_OUT = 50;  // x offset for output connection point (right third of cell)
+    // Vertical layout:
+    //   seed word label  y=10  (blue, above h1 only)
+    //   seed arrow tip   y=15  → cell top
+    //   cell top         y=19
+    //   cell center      y=32  (h-arrow level)
+    //   cell bottom      y=45
+    //   L-path dip       y=62  (horizontal segment of output→next-input path)
+    //   word label       y=74  (below horizontal, centered between cells)
+    const U_SEED_TEXT_Y = 9;
+    const U_SEED_ARR_BOT = 10;
+    const U_CELL_Y      = 30;
+    const U_CELL_H      = 26;
+    const U_ARROW_Y     = U_CELL_Y + U_CELL_H / 2;  // 43
+    const U_CELL_BOTTOM = U_CELL_Y + U_CELL_H;       // 56
+    const U_DIP         = 72;   // y of horizontal segment
+    const U_OUT_TEXT_Y  = 84;;   // word label y
+    const U_SVG_H       = 96;;
+
+    function escSvg(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    // visible   — visible[i] is the input word for cell i
+    // nextToken — word predicted by the active (last) cell; null if unknown
+    // mode      — "rnn" | "lstm"
+    //
+    // Layout:
+    //   seed "кот" ABOVE cell 0, arrow pointing DOWN into cell (blue)
+    //   h arrows going RIGHT between cells (context, purple)
+    //   output of each cell: L-shaped green path
+    //       ↓ down from cell bottom → horizontal right → ↑ up into next cell
+    //       word label sits below the horizontal segment
+    //   last (active) cell: short downward stub with predicted word
+    function buildUnrolledSVG(visible, nextToken, mode) {
+      const n = visible.length;
+      if (!n) return "";
+      const isLstm = mode === "lstm";
+      const hColor = isLstm ? "#9b59b6" : "#A855F7";
+      const cColor = "#f1948a";
+      const xColor = "#a5d6ff";
+      const oColor = "#3fb950";
+      const svgW = 14 + n * U_STEP;
+      const parts = [];
+
+      parts.push(`<defs>
+        <marker id="uH" markerWidth="5" markerHeight="5" refX="4" refY="2" orient="auto"><path d="M0,0 L0,4 L5,2z" fill="${hColor}"/></marker>
+        <marker id="uX" markerWidth="5" markerHeight="5" refX="4" refY="2" orient="auto"><path d="M0,0 L0,4 L5,2z" fill="${xColor}"/></marker>
+        <marker id="uO" markerWidth="5" markerHeight="5" refX="4" refY="2" orient="auto"><path d="M0,0 L0,4 L5,2z" fill="${oColor}"/></marker>
+        ${isLstm ? `<marker id="uC" markerWidth="5" markerHeight="5" refX="4" refY="2" orient="auto"><path d="M0,0 L0,4 L5,2z" fill="${cColor}"/></marker>` : ""}
+      </defs>`);
+
+      for (let i = 0; i < n; i++) {
+        const isActive = i === n - 1;
+        const op = isActive ? 1 : 0.42;
+        const sw = isActive ? 2.5 : 1.5;
+        const cx = 8 + i * U_STEP;
+        const mid = cx + U_CELL_W / 2;
+
+        // ── Seed input ABOVE first cell (blue) ────────────────────────────────
+        if (i === 0) {
+          parts.push(`<text x="${mid}" y="${U_SEED_TEXT_Y}"
+            font-family="Segoe UI" font-size="11" fill="${xColor}" text-anchor="middle"
+            font-weight="600" opacity="${op}">${escSvg(visible[0])}</text>`);
+          parts.push(`<line x1="${mid}" y1="${U_SEED_ARR_BOT}" x2="${mid}" y2="${U_CELL_Y - 1}"
+            stroke="${xColor}" stroke-width="1.5" marker-end="url(#uX)" opacity="${op}"/>`);
+        }
+
+        // ── Cell rect + label ─────────────────────────────────────────────────
+        parts.push(`<rect x="${cx}" y="${U_CELL_Y}" width="${U_CELL_W}" height="${U_CELL_H}"
+          rx="5" fill="#1c1f2e" stroke="${hColor}" stroke-width="${sw}" opacity="${op}"/>`);
+        parts.push(`<text x="${mid}" y="${U_CELL_Y + U_CELL_H / 2 + 4}"
+          font-family="Segoe UI" font-size="11" fill="${hColor}" text-anchor="middle"
+          font-weight="600" opacity="${op}">${isLstm ? "h·c" : "h" + (i + 1)}</text>`);
+
+        // ── h context arrow to next cell ──────────────────────────────────────
+        if (i < n - 1) {
+          const x1 = cx + U_CELL_W, x2 = cx + U_STEP - 3;
+          const ay = isLstm ? U_ARROW_Y + 5 : U_ARROW_Y;
+          parts.push(`<line x1="${x1}" y1="${ay}" x2="${x2}" y2="${ay}"
+            stroke="${hColor}" stroke-width="1.8" marker-end="url(#uH)" opacity="${op}"/>`);
+          if (isLstm) {
+            const cy2 = U_CELL_Y + 7;
+            parts.push(`<line x1="${x1}" y1="${cy2}" x2="${x2}" y2="${cy2}"
+              stroke="${cColor}" stroke-width="1.5" stroke-dasharray="4,3"
+              marker-end="url(#uC)" opacity="${op}"/>`);
+          }
+        }
+
+        // h₀ stub before first cell
+        if (i === 0) {
+          const stubX = Math.max(cx - 30, 2);
+          parts.push(`<line x1="${stubX}" y1="${U_ARROW_Y}" x2="${cx - 2}" y2="${U_ARROW_Y}"
+            stroke="${hColor}" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.35"/>`);
+          parts.push(`<text x="${stubX - 4}" y="${U_ARROW_Y + 4}"
+            font-family="Segoe UI" font-size="9" fill="${hColor}" text-anchor="middle" opacity="0.35">h₀</text>`);
+        }
+
+        // ── Output: L-path to next cell, or downward stub for last cell ───────
+        const outWord = isActive ? nextToken : (visible[i + 1] ?? null);
+        const outOp   = outWord ? op : (isActive ? 0.3 : 0);
+
+        if (outOp > 0) {
+          // output exits cell bottom at cx+U_IO_X_OUT (right-ish), not at mid
+          // input enters next cell bottom at nextCx+U_IO_X_IN (left-ish)
+          const outX = cx + U_IO_X_OUT;
+          if (!isActive) {
+            const nextCx  = 8 + (i + 1) * U_STEP;
+            const nextInX = nextCx + U_IO_X_IN;
+            const labelX  = (outX + nextInX) / 2;
+            parts.push(`<path
+              d="M ${outX},${U_CELL_BOTTOM + 1} L ${outX},${U_DIP} L ${nextInX},${U_DIP} L ${nextInX},${U_CELL_BOTTOM + 2}"
+              fill="none" stroke="${oColor}" stroke-width="1.5"
+              marker-end="url(#uO)" opacity="${outOp}"/>`);
+            parts.push(`<text x="${labelX}" y="${U_OUT_TEXT_Y}"
+              font-family="Segoe UI" font-size="11" fill="${oColor}" text-anchor="middle"
+              font-weight="600" opacity="${outOp}">${escSvg(outWord)}</text>`);
+          } else {
+            // Last cell: short downward stub with word (or "?")
+            parts.push(`<line x1="${outX}" y1="${U_CELL_BOTTOM + 1}" x2="${outX}" y2="${U_DIP}"
+              stroke="${oColor}" stroke-width="1.5" marker-end="url(#uO)" opacity="${outOp}"/>`);
+            parts.push(`<text x="${outX}" y="${U_OUT_TEXT_Y}"
+              font-family="Segoe UI" font-size="11" fill="${oColor}" text-anchor="middle"
+              font-weight="600" opacity="${outOp}">${escSvg(outWord ?? "?")}</text>`);
+          }
+        }
+      }
+
+      return `<svg viewBox="0 0 ${svgW} ${U_SVG_H}" xmlns="http://www.w3.org/2000/svg"
+        style="width:${svgW}px;min-width:${svgW}px;height:${U_SVG_H}px;overflow:visible">
+        ${parts.join("\n")}
+      </svg>`;
+    }
+
+    let _animAbort = false;
+
+    async function animateGeneration(tokens, fallbackInfo) {
+      _animAbort = false;
+      const delay = window.animDelay ?? 600;
+      const resultEl = document.getElementById("generation-result");
+      const unrolledEl = document.getElementById("unrolled-wrap");
+      resultEl.innerHTML = "";
+      unrolledEl.innerHTML = "";
+
+      for (let step = 0; step < tokens.length; step++) {
+        if (_animAbort) break;
+
+        // Add token to text result
+        if (step > 0) resultEl.appendChild(document.createTextNode(" "));
+        const span = document.createElement("span");
+        span.className = "gen-token " + (step === 0 ? "seed" : "active");
+        span.textContent = tokens[step];
+        resultEl.appendChild(span);
+
+        // Update unrolled SVG (all tokens, scroll to active)
+        const visible = tokens.slice(0, step + 1);
+        // nextToken: the word predicted by the active cell (= next in full token array)
+        const nextToken = (step + 1 < tokens.length) ? tokens[step + 1] : null;
+        unrolledEl.innerHTML = buildUnrolledSVG(visible, nextToken, currentMode);
+        unrolledEl.scrollLeft = unrolledEl.scrollWidth;
+
+        if (step < tokens.length - 1) await sleep(delay);
+        span.classList.remove("active");
+        span.classList.add("done");
+      }
+
+      // Mark seed as done style too
+      const seedEl = resultEl.querySelector(".gen-token.seed");
+      if (seedEl) seedEl.classList.add("done");
+
+      if (fallbackInfo) {
+        const note = document.createElement("div");
+        note.style.cssText = "font-size:12px;color:var(--text-muted);margin-top:6px;";
+        note.textContent = fallbackInfo;
+        resultEl.appendChild(note);
+      }
+    }
+
     async function generate() {
+      _animAbort = true; // stop any running animation
       const resultEl = document.getElementById("generation-result");
       const start = document.getElementById("start-word").value.trim() || "железо";
       const hiddenSize = HIDDEN_SIZES[parseInt(hiddenSlider.value)];
@@ -333,21 +492,10 @@
       try {
         const data = await apiFetch(endpoint);
         const allTokens = [data.start, ...data.words];
-        resultEl.innerHTML = allTokens.map((w, i) =>
-          `<span class="gen-token ${i === 0 ? "seed" : ""}">${w}</span>`
-        ).join(" ");
-        const newEls = Array.from(resultEl.querySelectorAll(".gen-token:not(.seed)"));
-        animateFlow(newEls, {
-          delay: 400, cls: "active", keep: false,
-          onStep: el => el.classList.add("active"),
-          onDone: () => newEls.forEach(el => el.classList.add("done")),
-        });
-        if (data.fallback_used) {
-          const note = document.createElement("div");
-          note.style.cssText = "font-size:12px;color:var(--text-muted);margin-top:6px;";
-          note.textContent = `Слово "${start}" не найдено в корпусе, использован: "${data.start}"`;
-          resultEl.appendChild(note);
-        }
+        const fallbackInfo = data.fallback_used
+          ? `Слово "${start}" не найдено в корпусе, использован: "${data.start}"`
+          : null;
+        await animateGeneration(allTokens, fallbackInfo);
       } catch(e) {
         showError(resultEl, e.message);
       }
@@ -363,14 +511,11 @@
         const dl = document.getElementById("corpus-words");
         dl.innerHTML = data.vocab.map(w => `<option value="${w}">`).join("");
 
-        // Update SVG token labels with first 5 words of corpus
+        // Update LSTM architecture SVG token labels with first 5 corpus words
         const sample = data.sample;
         for (let i = 0; i < 5; i++) {
-          const word = sample[i] || "";
-          const rnnEl = document.getElementById(`rnn-tok-${i}`);
           const lstmEl = document.getElementById(`lstm-tok-${i}`);
-          if (rnnEl) rnnEl.textContent = word;
-          if (lstmEl) lstmEl.textContent = word;
+          if (lstmEl) lstmEl.textContent = sample[i] || "";
         }
       } catch (e) {
         console.warn("vocab load failed:", e);

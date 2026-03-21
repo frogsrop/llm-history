@@ -16,7 +16,7 @@
  */
 function animateFlow(elements, options = {}) {
   const {
-    delay = 400,
+    delay = (window.animDelay ?? 400),
     cls = "token-highlight",
     keep = true,
     onStep = null,

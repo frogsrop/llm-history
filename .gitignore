@@ -7,7 +7,7 @@ __pycache__/
 .pytest_cache/
 
 # Large model files
-research/models/
+models/
 
 # Claude internal
 .claude/

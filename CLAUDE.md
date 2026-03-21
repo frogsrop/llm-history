@@ -32,44 +32,45 @@ Install: `pip install --pre --upgrade torch --index-url https://download.pytorch
 ## Project Structure
 
 ```
-research/
-  ├── PLAN.md                  — implementation plan, steps with checkboxes
-  ├── main.py                  — FastAPI app, routes, startup hooks
-  ├── corpus.py                — unified training corpus (single source of truth)
-  ├── pretrain_models.py       — one-time RNN/LSTM training, saves models/rnn_models.pt
-  ├── download_models.py       — one-time download: ruGPT-3 large + fastText cc.ru.300.bin
-  ├── environment.yml          — conda environment (use conda, not pip)
-  ├── pytest.ini               — pytest config
-  ├── routers/
-  │   ├── ngram.py             — N-gram / Markov chain API
-  │   ├── rnn.py               — TinyRNN + TinyLSTM (PyTorch), pretraining cache, /vocab endpoint
-  │   ├── embeddings.py        — fastText word vectors, analogy API (not yet implemented)
-  │   └── llm_era.py           — ruGPT-3 large attention + generation (not yet implemented)
-  ├── static/
-  │   ├── style.css            — dark theme, epoch color coding
-  │   ├── nav.js               — sidebar, prev/next, localStorage progress
-  │   ├── utils.js             — animateFlow(), fetch wrappers
-  │   └── tooltip.js           — universal ? hint button component
-  ├── templates/
-  │   ├── index.html           — main page + interactive timeline
-  │   ├── module-1-ngram.html  — N-gram / Markov chains
-  │   ├── module-2-rnn-lstm.html — RNN + LSTM
-  │   ├── module-3-embeddings.html — Word2Vec / embeddings
-  │   ├── module-4-llm-era.html — LLM era: improvement constructor
-  │   └── module-5-compare.html — final comparison
-  ├── models/
-  │   ├── rnn_models.pt        — pretrained RNN/LSTM weights (regenerate with pretrain_models.py)
-  │   ├── rugpt3large/         — ruGPT-3 large weights (ai-forever/rugpt3large_based_on_gpt2)
-  │   ├── rugpt3xl/            — ruGPT-3 XL weights
-  │   └── cc.ru.300.bin        — fastText Russian vectors (cc.ru.300.bin, ~2.6GB)
-  ├── data/
-  │   └── corpus.txt           — raw corpus sentences (one per line)
-  └── tests/
-      ├── conftest.py          — fixtures: FastAPI subprocess + Playwright browser
-      ├── test_smoke.py        — pages return 200, browser opens
-      ├── test_api.py          — API endpoint tests (httpx)
-      ├── test_corpus.py       — corpus quality checks
-      └── test_ui.py           — UI tests: clicks, sliders, animations (Playwright)
+├── CLAUDE.md                — project instructions (this file)
+├── .gitignore               — git ignore rules
+├── PLAN.md                  — implementation plan, steps with checkboxes
+├── main.py                  — FastAPI app, routes, startup hooks
+├── corpus.py                — unified training corpus (single source of truth)
+├── pretrain_models.py       — one-time RNN/LSTM training, saves models/rnn_models.pt
+├── download_models.py       — one-time download: ruGPT-3 large + fastText cc.ru.300.bin
+├── environment.yml          — conda environment (use conda, not pip)
+├── pytest.ini               — pytest config
+├── routers/
+│   ├── ngram.py             — N-gram / Markov chain API
+│   ├── rnn.py               — TinyRNN + TinyLSTM (PyTorch), pretraining cache, /vocab endpoint
+│   ├── embeddings.py        — fastText word vectors, analogy API (not yet implemented)
+│   └── llm_era.py           — ruGPT-3 large attention + generation (not yet implemented)
+├── static/
+│   ├── style.css            — dark theme, epoch color coding
+│   ├── nav.js               — sidebar, prev/next, localStorage progress
+│   ├── utils.js             — animateFlow(), fetch wrappers
+│   └── tooltip.js           — universal ? hint button component
+├── templates/
+│   ├── index.html           — main page + interactive timeline
+│   ├── module-1-ngram.html  — N-gram / Markov chains
+│   ├── module-2-rnn-lstm.html — RNN + LSTM
+│   ├── module-3-embeddings.html — Word2Vec / embeddings
+│   ├── module-4-llm-era.html — LLM era: improvement constructor
+│   └── module-5-compare.html — final comparison
+├── models/
+│   ├── rnn_models.pt        — pretrained RNN/LSTM weights (regenerate with pretrain_models.py)
+│   ├── rugpt3large/         — ruGPT-3 large weights (ai-forever/rugpt3large_based_on_gpt2)
+│   ├── rugpt3xl/            — ruGPT-3 XL weights
+│   └── cc.ru.300.bin        — fastText Russian vectors (cc.ru.300.bin, ~2.6GB)
+├── data/
+│   └── corpus.txt           — raw corpus sentences (one per line)
+└── tests/
+    ├── conftest.py          — fixtures: FastAPI subprocess + Playwright browser
+    ├── test_smoke.py        — pages return 200, browser opens
+    ├── test_api.py          — API endpoint tests (httpx)
+    ├── test_corpus.py       — corpus quality checks
+    └── test_ui.py           — UI tests: clicks, sliders, animations (Playwright)
 ```
 
 ## Progress
@@ -91,7 +92,6 @@ Pending:
 
 ```bash
 conda activate llm-explainer
-cd research
 uvicorn main:app --reload        # start server → http://localhost:8000
 python pretrain_models.py        # retrain RNN/LSTM after corpus changes
 python download_models.py        # one-time model download

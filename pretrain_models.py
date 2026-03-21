@@ -16,8 +16,7 @@ import torch
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
-from corpus import TOKENS
-from routers.rnn import TinyRNN, TinyLSTM, HIDDEN_SIZES, N_EPOCHS, W2I, DEVICE
+from routers.rnn import TinyRNN, TinyLSTM, HIDDEN_SIZES, N_EPOCHS, W2I, DEVICE, TOKENS
 
 MODELS_DIR = Path(__file__).parent / "models"
 MODELS_FILE = MODELS_DIR / "rnn_models.pt"

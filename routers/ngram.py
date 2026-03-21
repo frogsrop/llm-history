@@ -19,26 +19,13 @@ from fastapi import APIRouter, Query
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from corpus import SENTENCES
+from utils import BOS, EOS, make_tokens
 
 router = APIRouter()
 
-BOS = "<s>"
-EOS = "</s>"
-
 
 def tokens_for_order(order: int) -> List[str]:
-    """Build flat token list with sentence boundary tokens.
-
-    Each sentence gets (order-1) BOS tokens prepended and one EOS appended,
-    so N-gram contexts never leak across sentence boundaries.
-    """
-    result = []
-    for sent in SENTENCES:
-        result.extend([BOS] * max(0, order - 1))
-        result.extend(sent.split())
-        result.append(EOS)
-    return result
+    return make_tokens(order)
 
 
 def build_table(tokens: List[str], n: int) -> Dict[str, Dict[str, float]]:

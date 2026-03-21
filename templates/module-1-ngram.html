@@ -980,7 +980,7 @@
       svgEl.querySelectorAll('.graph-node.gen-active, .graph-node.gen-context')
         .forEach(el => el.classList.remove('gen-active', 'gen-context'));
       svgEl.querySelectorAll('path.gen-active')
-        .forEach(el => { el.classList.remove('gen-active'); el.style.cssText = ''; });
+        .forEach(el => { el.classList.remove('gen-active'); el.style.cssText = ''; el.setAttribute('marker-end', 'url(#marr)'); });
 
       if (idx < 0 || idx >= tokens.length) return;
       svgEl.classList.add('gen-running');
@@ -994,7 +994,10 @@
         const ctxNode = svgEl.querySelector(`.graph-node[data-id="${CSS.escape(ctxKey)}"]`);
         if (ctxNode) ctxNode.classList.add('gen-context');
         const pathEl = svgEl.querySelector(`path[data-from="${CSS.escape(ctxKey)}"][data-to="${CSS.escape(word)}"]`);
-        if (pathEl) pathEl.classList.add('gen-active');
+        if (pathEl) {
+          pathEl.classList.add('gen-active');
+          pathEl.setAttribute('marker-end', 'url(#marr-hi)');
+        }
       }
     }
 
@@ -1005,7 +1008,7 @@
       svgEl.querySelectorAll('.graph-node.gen-active, .graph-node.gen-context')
         .forEach(el => el.classList.remove('gen-active', 'gen-context'));
       svgEl.querySelectorAll('path.gen-active')
-        .forEach(el => { el.classList.remove('gen-active'); el.style.cssText = ''; });
+        .forEach(el => { el.classList.remove('gen-active'); el.style.cssText = ''; el.setAttribute('marker-end', 'url(#marr)'); });
     }
 
     // ── Generation ──────────────────────────────────────────────
@@ -1036,7 +1039,7 @@
         const newTokenEls = Array.from(resultEl.querySelectorAll(".gen-token:not(.seed)"));
         graphGenHighlight(allTokens, 0); // подсветить стартовое слово
         animateFlow(newTokenEls, {
-          delay: 500,
+          delay: window.animDelay ?? 500,
           cls: "active",
           keep: false,
           onStep: (el) => {

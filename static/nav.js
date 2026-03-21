@@ -121,6 +121,7 @@ function renderSidebar() {
 
   // Seed control
   const seedSection = document.createElement("div");
+  seedSection.id = "sidebar-seed-section";
   seedSection.style.cssText = "margin-top:20px; padding-top:16px; border-top:1px solid var(--border);";
   seedSection.innerHTML = `
     <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Seed</div>
@@ -136,6 +137,31 @@ function renderSidebar() {
 
   sidebar.querySelector("#global-seed").addEventListener("change", (e) => {
     setSeed(parseInt(e.target.value));
+  });
+
+  // Animation speed
+  const speedSection = document.createElement("div");
+  speedSection.style.cssText = "margin-top:16px; padding-top:16px; border-top:1px solid var(--border);";
+  speedSection.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <span style="font-size:12px; color:var(--text-muted);">Animation speed</span>
+      <span id="sidebar-speed-label" style="font-size:12px; color:var(--text-muted);">400ms</span>
+    </div>
+    <input type="range" id="sidebar-speed" min="50" max="1500" step="50" value="${window.animDelay ?? 400}"
+           style="width:100%; accent-color:var(--accent);">
+    <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:2px;">
+      <span>Fast</span><span>Slow</span>
+    </div>
+  `;
+  sidebar.appendChild(speedSection);
+
+  const speedSlider = document.getElementById("sidebar-speed");
+  const speedLabel  = document.getElementById("sidebar-speed-label");
+
+  speedSlider.addEventListener("input", () => {
+    const ms = parseInt(speedSlider.value);
+    window.animDelay = ms;
+    speedLabel.textContent = ms + "ms";
   });
 }
 
