@@ -114,7 +114,7 @@
       stroke-width: 3.5;
     }
     svg.gen-running .graph-node:not(.gen-active):not(.gen-context) { opacity: 0.35; }
-    svg.gen-running path[data-from]:not(.gen-active) { opacity: 0.12 !important; }
+    svg.gen-running path[data-from]:not(.gen-active) { opacity: 0.15 !important; }
     path.gen-active { stroke: #ffffff !important; opacity: 1 !important; stroke-width: 3px !important; }
   </style>
 </head>
@@ -131,7 +131,7 @@
     <h1 class="section-title">
       <span class="epoch-bar epoch-ngram"></span>N-gram / Цепи Маркова
     </h1>
-    <p class="section-sub">1990е–2000е — предсказание по таблице переходов</p>
+    <p class="section-sub">1948–2000е — предсказание по таблице переходов</p>
 
     <!-- Corpus -->
     <div class="card">
@@ -182,6 +182,10 @@
           <input type="range" id="words-count" min="1" max="10" value="5" step="1" style="width:80px;">
           <span id="words-count-val" style="font-size:14px; font-weight:600; min-width:20px;">5</span>
         </div>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:14px; color:var(--text-muted);">
+          <input type="checkbox" id="greedy-toggle">
+          Самое вероятное слово
+        </label>
         <button class="btn btn-primary" id="generate-btn">▶ Генерировать</button>
       </div>
 
@@ -488,11 +492,32 @@
         return { x: px + nx * t, y: py + ny * t };
       }
 
+      // ── Color-temperature palette: cold (blue) → warm (red) by probability ──
+      function probToColor(p) {
+        // 0.0 → cool blue, 0.5 → yellow, 1.0 → hot red
+        const stops = [
+          [0.0,  74, 158, 255],  // #4a9eff — cool blue
+          [0.25, 80, 210, 180],  // teal
+          [0.5, 250, 210,  50],  // warm yellow
+          [0.75,245, 150,  50],  // orange
+          [1.0, 248, 113, 113],  // #F87171 — hot red
+        ];
+        let lo = stops[0], hi = stops[stops.length - 1];
+        for (let i = 0; i < stops.length - 1; i++) {
+          if (p >= stops[i][0] && p <= stops[i + 1][0]) { lo = stops[i]; hi = stops[i + 1]; break; }
+        }
+        const t = (hi[0] === lo[0]) ? 0 : (p - lo[0]) / (hi[0] - lo[0]);
+        const r = Math.round(lo[1] + (hi[1] - lo[1]) * t);
+        const g = Math.round(lo[2] + (hi[2] - lo[2]) * t);
+        const b = Math.round(lo[3] + (hi[3] - lo[3]) * t);
+        return `rgb(${r},${g},${b})`;
+      }
+
       const defs = `<defs>
         <marker id="marr" viewBox="0 -4 8 8" refX="7" refY="0"
           markerUnits="strokeWidth" markerWidth="7" markerHeight="7" orient="auto">
           <path d="M0,-3.5 L7,0 L0,3.5" fill="none"
-            stroke="#4a9eff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+            stroke="context-stroke" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
         </marker>
         <marker id="marr-hi" viewBox="0 -4 8 8" refX="7" refY="0"
           markerUnits="strokeWidth" markerWidth="7" markerHeight="7" orient="auto">
@@ -517,13 +542,12 @@
         // Self-loop: small arc above the top edge of the rectangle
         if (from === to) {
           const lx = p1.x, ly = p1.y - RH - 28;  // RH is fixed
-          const color = isSel ? '#ffffff' : '#4a9eff';
-          const op    = isSel ? 1 : (0.35 + prob * 0.65).toFixed(2);
+          const color = isSel ? '#ffffff' : probToColor(prob);
           edgesSvg += `
             <ellipse data-selfloop="${from}" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="24" ry="18"
-              fill="none" stroke="${color}" stroke-width="${isSel ? 4 : 2}" opacity="${op}"/>
+              fill="none" stroke="${color}" stroke-width="${isSel ? 4 : 2}"/>
             <text x="${lx.toFixed(1)}" y="${(ly - 24).toFixed(1)}" text-anchor="middle"
-              font-size="${fsize - 6}" fill="${color}" opacity="${op}"
+              font-size="${fsize - 6}" fill="${color}"
               style="pointer-events:none">${(prob*100).toFixed(0)}%</text>`;
           return;
         }
@@ -551,8 +575,7 @@
         const mx = storedCP ? storedCP.x : (s.x + e.x) / 2 - ny * perp;
         const my = storedCP ? storedCP.y : (s.y + e.y) / 2 + nx * perp;
 
-        const color = isSel ? '#ffffff' : '#4a9eff';
-        const op    = isSel ? 1   : (0.3 + prob * 0.7).toFixed(2);
+        const color = isSel ? '#ffffff' : probToColor(prob);
         const sw    = isSel ? 2.5 : (0.6 + prob * 1.8).toFixed(1);
         const lx = Math.round((s.x + 2*mx + e.x) / 4);
         const ly = Math.round((s.y + 2*my + e.y) / 4) - 12;
@@ -560,10 +583,10 @@
         edgesSvg += `
           <path data-from="${from}" data-to="${to}"
             d="M${s.x.toFixed(1)},${s.y.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${e.x.toFixed(1)},${e.y.toFixed(1)}"
-            fill="none" stroke="${color}" stroke-width="${sw}" opacity="${op}"
+            fill="none" stroke="${color}" stroke-width="${sw}"
             marker-end="url(#${isSel ? 'marr-hi' : 'marr'})"/>
           <text data-elabel="${from}||${to}" x="${lx}" y="${ly}" text-anchor="middle"
-            font-size="${fsize - 6}" font-weight="600" fill="${color}" opacity="${op}"
+            font-size="${fsize - 6}" font-weight="600" fill="${color}"
             style="pointer-events:none">${(prob*100).toFixed(0)}%</text>`;
         // Point ON the curve at t=0.5
         const cmx = (s.x + 2*mx + e.x) / 4, cmy = (s.y + 2*my + e.y) / 4;
@@ -1023,7 +1046,7 @@
 
       try {
         const data = await apiFetch(
-          `/api/ngram/generate?order=${order}&start=${encodeURIComponent(start)}&words=${words}&seed=${seed}`
+          `/api/ngram/generate?order=${order}&start=${encodeURIComponent(start)}&words=${words}&seed=${seed}&greedy=${document.getElementById("greedy-toggle").checked}`
         );
 
         const actualStart = data.start;

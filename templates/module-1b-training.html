@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Как учатся модели — LLM Evolution</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* ── Mode toggle (same as RNN page) ───────────────── */
+    .mode-toggle { display:flex; gap:8px; margin-bottom:20px; }
+    .mode-btn {
+      padding:8px 22px; border-radius:var(--radius); border:1px solid var(--border);
+      background:var(--bg-card); color:var(--text-muted); font-size:14px; font-weight:600;
+      cursor:pointer; transition:background var(--transition),color var(--transition),border-color var(--transition);
+    }
+    .mode-btn.active { background:var(--accent); border-color:var(--accent); color:#0d1117; }
+
+    /* ── Column layout ────────────────────────────────── */
+    .train-column {
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      padding: 32px 24px 24px;
+    }
+
+    .formula-header {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      letter-spacing: 1px;
+    }
+
+    /* ── Stacked computation ──────────────────────────── */
+    .calc-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      min-width: 260px;
+    }
+    .calc-row {
+      font-size: 32px;
+      line-height: 1.4;
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end;
+      gap: 8px;
+      width: 100%;
+    }
+    .calc-row.small { font-size: 22px; }
+    .calc-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-right: auto;
+      align-self: center;
+    }
+    .calc-op {
+      color: var(--text-muted);
+      font-size: 20px;
+      width: 20px;
+      text-align: center;
+    }
+    .calc-val { min-width: 80px; text-align: right; }
+    .val-x { color: var(--text); }
+    .val-w { color: var(--accent); }
+    .val-h { color: var(--epoch-rnn); }
+    .val-pred { color: var(--accent); }
+    .val-true { color: #3fb950; }
+    .val-err { font-weight: 700; }
+    .err-pos { color: var(--epoch-llm); }
+    .err-neg { color: #58a6ff; }
+    .err-zero { color: #3fb950; }
+
+    .calc-line {
+      width: 100%;
+      height: 2px;
+      background: var(--border);
+      margin: 6px 0;
+    }
+    .calc-dline {
+      width: 100%;
+      border: none;
+      border-top: 2px solid var(--border);
+      border-bottom: 2px solid var(--border);
+      height: 6px;
+      margin: 6px 0;
+    }
+
+    /* ── Single ±ε controls ──────────────────────────── */
+    .train-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 28px;
+    }
+    .eps-btn {
+      padding: 14px 36px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition);
+      font-family: monospace;
+    }
+    .eps-btn:hover { background: var(--bg-hover); border-color: var(--accent); }
+    .eps-btn:active { background: var(--accent); color: #0d1117; }
+
+    /* ── 4-row weight controls (NN slide) ────────────── */
+    .weight-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 28px;
+      width: 100%;
+      max-width: 440px;
+    }
+    .weight-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: monospace;
+      font-size: 15px;
+    }
+    .weight-name {
+      color: var(--text-muted);
+      min-width: 28px;
+      font-weight: 600;
+    }
+    .weight-val {
+      color: var(--accent);
+      font-weight: 700;
+      min-width: 60px;
+      text-align: right;
+    }
+    .grad-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      min-width: 70px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: auto;
+    }
+    .grad-arrow {
+      font-size: 16px;
+      line-height: 1;
+    }
+    .grad-down { color: #3fb950; }
+    .grad-up { color: var(--epoch-llm); }
+    .grad-zero { color: var(--text-muted); }
+    .w-btn {
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition);
+      font-family: monospace;
+    }
+    .w-btn:hover { background: var(--bg-hover); border-color: var(--accent); }
+    .w-btn:active { background: var(--accent); color: #0d1117; }
+
+    /* ── Shared ──────────────────────────────────────── */
+    .eps-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .eps-selector select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 14px;
+      font-family: monospace;
+      outline: none;
+    }
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 14px;
+    }
+    .step-counter { font-size: 13px; color: var(--text-muted); }
+    .reset-btn {
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .reset-btn:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--text); }
+
+    .loss-display { text-align: center; margin: 12px 0; }
+    .loss-value {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: monospace;
+      transition: color 0.3s;
+    }
+    .loss-history {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 80px;
+      margin: 16px 0;
+      padding: 0 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .loss-bar {
+      flex: 1;
+      min-width: 3px;
+      max-width: 12px;
+      background: var(--accent);
+      border-radius: 2px 2px 0 0;
+      transition: height 0.2s;
+      opacity: 0.7;
+    }
+    .loss-bar:last-child { opacity: 1; }
+
+    .viz-wrap { position: relative; margin: 16px 0; }
+
+    @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    .flash { animation: flash 0.3s ease; }
+  </style>
+</head>
+<body>
+  <nav id="sidebar"></nav>
+  <main id="main-content">
+    <h1 class="section-title"><span class="epoch-bar" style="background: var(--accent);"></span>Как учатся модели</h1>
+    <p class="section-sub">Подбираем веса вручную, по одному примеру за раз</p>
+
+    <!-- ── Mode toggle ──────────────────────────────────── -->
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-mode-linear">1 вес</button>
+      <button class="mode-btn" id="btn-mode-nn">Нейросеть</button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         SLIDE 1: Linear  y = x × w
+         ════════════════════════════════════════════════════ -->
+    <div id="slide-linear">
+      <div class="card">
+        <div class="train-column">
+          <div class="formula-header">y&#x302; = x &times; w</div>
+          <div class="calc-stack">
+            <div class="calc-row">
+              <span class="calc-label">x</span>
+              <span class="calc-val val-x" id="v-x">3.0</span>
+            </div>
+            <div class="calc-row">
+              <span class="calc-label">w</span>
+              <span class="calc-op">&times;</span>
+              <span class="calc-val val-w" id="v-w">0.50</span>
+            </div>
+            <div class="calc-line"></div>
+            <div class="calc-row">
+              <span class="calc-label">y&#x302;</span>
+              <span class="calc-val val-pred" id="v-pred">1.50</span>
+            </div>
+            <div class="calc-row">
+              <span class="calc-label">y</span>
+              <span class="calc-val val-true" id="v-true">6.0</span>
+            </div>
+            <div class="calc-dline"></div>
+            <div class="calc-row">
+              <span class="calc-label">y&#x302; &minus; y</span>
+              <span class="calc-val val-err" id="v-err">-4.50</span>
+            </div>
+          </div>
+
+          <div class="train-controls">
+            <button class="eps-btn" id="lin-btn-minus">&minus; &epsilon;</button>
+            <div class="eps-selector">
+              <label for="lin-eps">&epsilon; =</label>
+              <select id="lin-eps">
+                <option value="0.01">0.01</option>
+                <option value="0.05">0.05</option>
+                <option value="0.1" selected>0.1</option>
+                <option value="0.5">0.5</option>
+                <option value="1.0">1.0</option>
+              </select>
+            </div>
+            <button class="eps-btn" id="lin-btn-plus">+ &epsilon;</button>
+          </div>
+          <div class="meta-row">
+            <div class="step-counter">Пример #<strong id="lin-step">1</strong></div>
+            <button class="reset-btn" id="lin-reset">Сбросить</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">График</div>
+        <div style="display:flex; gap:16px; font-size:13px; padding:0 0 6px 4px;">
+          <span><span style="display:inline-block;width:20px;height:3px;background:#3fb950;vertical-align:middle;border-top:2px dashed #3fb950;"></span> y = 2x</span>
+          <span><span style="display:inline-block;width:20px;height:3px;background:#f59e0b;vertical-align:middle;"></span> модель: y = <span id="lin-legend-w">0.50</span>x</span>
+        </div>
+        <div class="viz-wrap">
+          <svg id="lin-svg" width="100%" height="280" viewBox="0 0 500 280"></svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Средняя ошибка (MSE)</div>
+        <div class="loss-display">
+          <div class="loss-value" id="lin-loss">&mdash;</div>
+        </div>
+        <div class="loss-history" id="lin-loss-bars"></div>
+        <p style="font-size:12px; color:var(--text-muted); text-align:center;">Ошибка на каждом примере (последние 50)</p>
+      </div>
+
+      <div class="callout">
+        Вы подкручиваете вес вручную. В реальных нейросетях это делает <strong>градиентный спуск</strong> —
+        он автоматически вычисляет, в какую сторону и насколько сдвинуть каждый вес, чтобы ошибка уменьшилась.
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         SLIDE 2: Neural net  x → 4 σ → 2 σ → y  (2 hidden layers)
+         Target: y = (x⁴/5 + 4x³) / 1000  on [-20, 20]
+         ════════════════════════════════════════════════════ -->
+    <div id="slide-nn" style="display:none">
+      <div class="card">
+        <div class="train-column">
+          <!-- Live network diagram -->
+          <svg id="nn-diagram" width="100%" height="400" viewBox="0 0 700 400" style="max-width:700px;"></svg>
+
+          <!-- Prediction summary -->
+          <div style="display:flex; gap:32px; justify-content:center; margin-top:12px; font-family:monospace; font-size:18px;">
+            <div style="text-align:center;">
+              <div style="font-size:12px; color:var(--text-muted);">y&#x302;</div>
+              <div style="color:var(--accent); font-weight:700;" id="nn-pred">0.00</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:12px; color:var(--text-muted);">y</div>
+              <div style="color:#3fb950; font-weight:700;" id="nn-true">0.00</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:12px; color:var(--text-muted);">y&#x302; &minus; y</div>
+              <div class="val-err" id="nn-err" style="font-weight:700;">0.00</div>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-top:20px; flex-wrap:wrap;">
+            <div class="eps-selector">
+              <label for="nn-eps">lr =</label>
+              <select id="nn-eps">
+                <option value="0.001">0.001</option>
+                <option value="0.01" selected>0.01</option>
+                <option value="0.1">0.1</option>
+                <option value="1.0">1.0</option>
+              </select>
+            </div>
+            <div class="eps-selector">
+              <label for="nn-steps-per">steps =</label>
+              <select id="nn-steps-per">
+                <option value="1">1</option>
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="500">500</option>
+                <option value="1000">1000</option>
+                <option value="2000">2000</option>
+              </select>
+            </div>
+            <div class="eps-selector">
+              <label for="nn-batch">batch =</label>
+              <select id="nn-batch">
+                <option value="1">1</option>
+                <option value="4">4</option>
+                <option value="16" selected>16</option>
+                <option value="32">32</option>
+                <option value="64">64</option>
+                <option value="128">128</option>
+              </select>
+            </div>
+            <button class="eps-btn" id="nn-grad-step" style="padding:10px 28px; background:#3fb950; border-color:#3fb950; color:#0d1117;">Grad step &rarr;</button>
+          </div>
+          <div class="meta-row" style="margin-top:10px;">
+            <div class="step-counter">Пример #<strong id="nn-step">1</strong></div>
+            <span style="font-size:12px; color:var(--text-muted);">Весов: <strong id="nn-nweights">14</strong></span>
+            <button class="reset-btn" id="nn-reset">Сбросить</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">График</div>
+        <div style="display:flex; gap:16px; font-size:13px; padding:0 0 6px 4px;">
+          <span><span style="display:inline-block;width:20px;height:3px;background:#3fb950;vertical-align:middle;border-top:2px dashed #3fb950;"></span> y = (x⁴/5 + 4x³) / 1000</span>
+          <span><span style="display:inline-block;width:20px;height:3px;background:#f59e0b;vertical-align:middle;"></span> модель</span>
+        </div>
+        <div class="viz-wrap">
+          <svg id="nn-svg" width="100%" height="300" viewBox="0 0 500 300"></svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Средняя ошибка (MSE)</div>
+        <div class="loss-display">
+          <div class="loss-value" id="nn-loss">&mdash;</div>
+        </div>
+        <div class="loss-history" id="nn-loss-bars"></div>
+        <p style="font-size:12px; color:var(--text-muted); text-align:center;">MSE по батчам, лог-шкала (последние 50)</p>
+      </div>
+
+      <div class="callout">
+        <strong>&#x25B2; / &#x25BC;</strong> рядом с весом — градиент. Стрелка показывает, куда двигать вес, чтобы уменьшить ошибку.
+        Число рядом — насколько сильно этот вес влияет. Это и есть суть <strong>backpropagation</strong> — автоматический расчёт
+        градиентов для каждого веса, чтобы <strong>градиентный спуск</strong> знал, куда шагать.
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/nav.js"></script>
+  <script>
+  // ══════════════════════════════════════════════════════
+  // MODE TOGGLE
+  // ══════════════════════════════════════════════════════
+  const slideLinear = document.getElementById("slide-linear");
+  const slideNN     = document.getElementById("slide-nn");
+  const btnLinear   = document.getElementById("btn-mode-linear");
+  const btnNN       = document.getElementById("btn-mode-nn");
+
+  btnLinear.addEventListener("click", () => {
+    slideLinear.style.display = "";
+    slideNN.style.display = "none";
+    btnLinear.classList.add("active");
+    btnNN.classList.remove("active");
+  });
+  btnNN.addEventListener("click", () => {
+    slideLinear.style.display = "none";
+    slideNN.style.display = "";
+    btnNN.classList.add("active");
+    btnLinear.classList.remove("active");
+    nnUpdate();
+  });
+
+  // ══════════════════════════════════════════════════════
+  // SLIDE 1: LINEAR  y = 2x
+  // ══════════════════════════════════════════════════════
+  const lin = {
+    w: 0.5, steps: 0,
+    current: null,
+    history: [], maxPts: 20,
+    lossHist: [], errHist: [], maxLoss: 50,
+  };
+
+  function linSample() {
+    const x = Math.round((Math.random() * 5 + 0.5) * 10) / 10;
+    return { x, y: Math.round(x * 2 * 10) / 10 };
+  }
+  lin.current = linSample();
+
+  function linUpdate() {
+    const d = lin.current;
+    const yP = d.x * lin.w;
+    const err = yP - d.y;
+
+    document.getElementById("v-x").textContent    = d.x.toFixed(1);
+    document.getElementById("v-w").textContent     = lin.w.toFixed(2);
+    document.getElementById("v-pred").textContent  = yP.toFixed(2);
+    document.getElementById("v-true").textContent  = d.y.toFixed(1);
+    document.getElementById("lin-step").textContent = lin.steps + 1;
+
+    const vErr = document.getElementById("v-err");
+    vErr.textContent = (err >= 0 ? "+" : "") + err.toFixed(2);
+    vErr.className = "calc-val val-err " + (Math.abs(err) < 0.005 ? "err-zero" : err > 0 ? "err-pos" : "err-neg");
+
+    // Flash
+    vErr.classList.remove("flash");
+    document.getElementById("v-pred").classList.remove("flash");
+    void vErr.offsetWidth;
+    vErr.classList.add("flash");
+    document.getElementById("v-pred").classList.add("flash");
+
+    // MSE
+    lin.errHist.push(err * err);
+    const mse = lin.errHist.reduce((a, b) => a + b, 0) / lin.errHist.length;
+    const lossEl = document.getElementById("lin-loss");
+    lossEl.textContent = mse.toFixed(4);
+    lossEl.style.color = mse < 0.01 ? "#3fb950" : mse < 1 ? "var(--accent)" : "var(--epoch-llm)";
+
+    // Bars
+    lin.lossHist.push(err * err);
+    if (lin.lossHist.length > lin.maxLoss) lin.lossHist.shift();
+    const maxL = Math.max(...lin.lossHist, 0.1);
+    document.getElementById("lin-loss-bars").innerHTML = lin.lossHist.map(l =>
+      `<div class="loss-bar" style="height:${Math.max(2, (l / maxL) * 100)}%"></div>`
+    ).join("");
+
+    linDrawViz();
+  }
+
+  function linDrawViz() {
+    const svg = document.getElementById("lin-svg");
+    const W = 500, H = 280;
+    const pad = { top: 20, right: 20, bottom: 40, left: 50 };
+    const pw = W - pad.left - pad.right, ph = H - pad.top - pad.bottom;
+    const xMax = 6, yMax = 12;
+    const sx = x => pad.left + (x / xMax) * pw;
+    const sy = y => pad.top + ph - (y / yMax) * ph;
+    let s = "";
+
+    // Grid
+    for (let i = 0; i <= 6; i++) {
+      s += `<line x1="${sx(i)}" y1="${pad.top}" x2="${sx(i)}" y2="${H - pad.bottom}" stroke="var(--border)" stroke-width="0.5"/>`;
+      s += `<text x="${sx(i)}" y="${H - pad.bottom + 18}" text-anchor="middle" fill="var(--text-muted)" font-size="11">${i}</text>`;
+    }
+    for (let i = 0; i <= 12; i += 2) {
+      s += `<line x1="${pad.left}" y1="${sy(i)}" x2="${W - pad.right}" y2="${sy(i)}" stroke="var(--border)" stroke-width="0.5"/>`;
+      s += `<text x="${pad.left - 8}" y="${sy(i) + 4}" text-anchor="end" fill="var(--text-muted)" font-size="11">${i}</text>`;
+    }
+    s += `<line x1="${pad.left}" y1="${H - pad.bottom}" x2="${W - pad.right}" y2="${H - pad.bottom}" stroke="var(--text-muted)" stroke-width="1"/>`;
+    s += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${H - pad.bottom}" stroke="var(--text-muted)" stroke-width="1"/>`;
+
+    // True line
+    s += `<line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(xMax)}" y2="${sy(xMax * 2)}" stroke="#3fb950" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>`;
+
+    // Model line
+    const pYM = Math.min(lin.w * xMax, yMax);
+    const pXE = lin.w > 0 ? Math.min(xMax, yMax / lin.w) : xMax;
+    s += `<line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(pXE)}" y2="${sy(pYM)}" stroke="#f59e0b" stroke-width="2.5"/>`;
+    // Update legend weight value
+    const linLegendW = document.getElementById('lin-legend-w');
+    if (linLegendW) linLegendW.textContent = lin.w.toFixed(2);
+
+    // History
+    lin.history.forEach((d, i) => {
+      const op = Math.max(0.1, 0.6 - (lin.history.length - i) * 0.03);
+      s += `<circle cx="${sx(d.x)}" cy="${sy(d.y)}" r="3.5" fill="#3fb950" opacity="${op}"/>`;
+    });
+
+    // Current
+    const d = lin.current, yP = d.x * lin.w;
+    if (Math.abs(yP - d.y) > 0.01) {
+      s += `<line x1="${sx(d.x)}" y1="${sy(d.y)}" x2="${sx(d.x)}" y2="${sy(Math.max(0, Math.min(yP, yMax)))}" stroke="var(--epoch-llm)" stroke-width="2.5" stroke-dasharray="3,2" opacity="0.8"/>`;
+    }
+    s += `<circle cx="${sx(d.x)}" cy="${sy(d.y)}" r="7" fill="#3fb950"/>`;
+    s += `<circle cx="${sx(d.x)}" cy="${sy(d.y)}" r="12" fill="none" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.5"/>`;
+    if (yP >= 0 && yP <= yMax)
+      s += `<circle cx="${sx(d.x)}" cy="${sy(yP)}" r="6" fill="#f59e0b" stroke="var(--bg)" stroke-width="1.5"/>`;
+
+    s += `<text x="${W / 2}" y="${H - 4}" text-anchor="middle" fill="var(--text-muted)" font-size="12">x</text>`;
+    s += `<text x="14" y="${H / 2}" text-anchor="middle" fill="var(--text-muted)" font-size="12" transform="rotate(-90,14,${H / 2})">y</text>`;
+    svg.innerHTML = s;
+  }
+
+  function linAdjust(sign) {
+    const eps = parseFloat(document.getElementById("lin-eps").value);
+    lin.w = Math.round((lin.w + sign * eps) * 1000) / 1000;
+    lin.steps++;
+    lin.history.push(lin.current);
+    if (lin.history.length > lin.maxPts) lin.history.shift();
+    lin.current = linSample();
+    linUpdate();
+  }
+
+  document.getElementById("lin-btn-plus").addEventListener("click", () => linAdjust(+1));
+  document.getElementById("lin-btn-minus").addEventListener("click", () => linAdjust(-1));
+  document.getElementById("lin-reset").addEventListener("click", () => {
+    lin.w = 0.5; lin.steps = 0;
+    lin.history.length = 0; lin.lossHist.length = 0; lin.errHist.length = 0;
+    lin.current = linSample();
+    linUpdate();
+  });
+  linUpdate();
+
+  // ══════════════════════════════════════════════════════
+  // SLIDE 2: DEEP NEURAL NET — generic N hidden layers
+  // Architecture: x → 10σ → 10σ → 10σ → 10σ → 10σ → y
+  // Target: y = (x⁴/5 + 4x³) / 1000  on [-20, 20]
+  // ══════════════════════════════════════════════════════
+  const LAYERS = [4, 4];
+  const NLAYERS = LAYERS.length;
+
+  // Parameter layout: for each connection layer store weights then biases
+  // Connections: input→L0, L0→L1, ..., L(n-1)→output
+  // Each: fan_in*fan_out weights + fan_out biases
+  const connFanIn  = [1, ...LAYERS.slice(0, -1), LAYERS[NLAYERS - 1]];
+  const connFanOut = [...LAYERS, 1];
+  const NCONN = NLAYERS + 1;
+  const wOff = [];  // weight offset per connection
+  const bOff = [];  // bias offset per connection
+  {
+    let off = 0;
+    for (let c = 0; c < NCONN; c++) {
+      const nw = connFanIn[c] * connFanOut[c];
+      const nb = connFanOut[c];
+      wOff.push(off); off += nw;
+      bOff.push(off); off += nb;
+    }
+    var NPARAMS = off;
+  }
+
+  function initParams() {
+    const p = new Array(NPARAMS);
+    for (let c = 0; c < NCONN; c++) {
+      const fIn = connFanIn[c], fOut = connFanOut[c];
+      // He init for LeakyReLU
+      const sc = Math.sqrt(2 / fIn);
+      for (let i = 0; i < fIn * fOut; i++) p[wOff[c] + i] = (Math.random() - 0.5) * 2 * sc;
+      for (let i = 0; i < fOut; i++) p[bOff[c] + i] = 0;
+    }
+    return p;
+  }
+
+  const INIT_P = initParams();
+  const nn = {
+    w: [...INIT_P],
+    steps: 0,
+    current: null,
+    history: [], maxPts: 30,
+    lossHist: [], errHist: [], maxLoss: 50,
+  };
+  const NWEIGHTS = NPARAMS;
+
+  function targetRaw(x) { return (Math.pow(x, 4) / 5 + 4 * Math.pow(x, 3)) / 1000; }
+  // Precompute min/max for normalization
+  let tMin = Infinity, tMax = -Infinity;
+  for (let i = -200; i <= 200; i++) {
+    const v = targetRaw(i / 10);
+    if (v < tMin) tMin = v;
+    if (v > tMax) tMax = v;
+  }
+  const tRange = tMax - tMin || 1;
+  // Normalized target: [0, 1]
+  function targetNorm(x) { return (targetRaw(x) - tMin) / tRange; }
+  // Denormalize network output back to real scale
+  function denorm(y) { return y * tRange + tMin; }
+  // For chart: real-scale target
+  function targetFn(x) { return targetRaw(x); }
+  function act(z) { return z > 0 ? z : 0.01 * z; }
+
+  function nnForward(x, p) {
+    const H = [], Z = [];
+    // Layer 0: input(1) → H[0]
+    H[0] = new Array(LAYERS[0]);
+    Z[0] = new Array(LAYERS[0]);
+    for (let j = 0; j < LAYERS[0]; j++) {
+      Z[0][j] = p[wOff[0] + j] * x + p[bOff[0] + j];
+      H[0][j] = act(Z[0][j]);
+    }
+    // Hidden → hidden
+    for (let l = 1; l < NLAYERS; l++) {
+      const fIn = LAYERS[l - 1], fOut = LAYERS[l];
+      H[l] = new Array(fOut);
+      Z[l] = new Array(fOut);
+      for (let j = 0; j < fOut; j++) {
+        let z = p[bOff[l] + j];
+        for (let i = 0; i < fIn; i++) z += p[wOff[l] + i * fOut + j] * H[l - 1][i];
+        Z[l][j] = z;
+        H[l][j] = act(z);
+      }
+    }
+    // Output (linear): hidden[last] → scalar
+    const last = NLAYERS - 1;
+    let yP = p[bOff[NLAYERS]]; // output bias
+    for (let i = 0; i < LAYERS[last]; i++) {
+      yP += p[wOff[NLAYERS] + i] * H[last][i];
+    }
+    return { H, Z, yP };
+  }
+
+  function nnGradients(x, y, p) {
+    const { H, Z, yP } = nnForward(x, p);
+    const err = yP - y;
+    const dEdyP = 2 * err;
+    const grads = new Array(NPARAMS).fill(0);
+
+    const dEdH = [];
+    for (let l = 0; l < NLAYERS; l++) dEdH[l] = new Array(LAYERS[l]).fill(0);
+
+    // Output layer
+    const last = NLAYERS - 1;
+    grads[bOff[NLAYERS]] = dEdyP; // output bias grad
+    for (let i = 0; i < LAYERS[last]; i++) {
+      grads[wOff[NLAYERS] + i] = dEdyP * H[last][i];
+      dEdH[last][i] = dEdyP * p[wOff[NLAYERS] + i];
+    }
+
+    // Backprop hidden layers — LeakyReLU derivative: 1 if z>0, 0.01 otherwise
+    for (let l = NLAYERS - 1; l >= 1; l--) {
+      const fIn = LAYERS[l - 1], fOut = LAYERS[l];
+      for (let j = 0; j < fOut; j++) {
+        const dz = dEdH[l][j] * (Z[l][j] > 0 ? 1 : 0.01);
+        grads[bOff[l] + j] = dz;
+        for (let i = 0; i < fIn; i++) {
+          grads[wOff[l] + i * fOut + j] = dz * H[l - 1][i];
+          dEdH[l - 1][i] += dz * p[wOff[l] + i * fOut + j];
+        }
+      }
+    }
+
+    // Input layer
+    for (let j = 0; j < LAYERS[0]; j++) {
+      const dz = dEdH[0][j] * (Z[0][j] > 0 ? 1 : 0.01);
+      grads[wOff[0] + j] = dz * x;
+      grads[bOff[0] + j] = dz;
+    }
+
+    return grads;
+  }
+
+  function nnSample() {
+    const x = Math.round((Math.random() * 40 - 20) * 10) / 10;
+    return { x, yNorm: targetNorm(x), yReal: targetRaw(x) };
+  }
+  nn.current = nnSample();
+
+  function drawNNDiagram(x, H, yP, w) {
+    const svg = document.getElementById("nn-diagram");
+    const svgW = 700, svgH = 400;
+    const nCols = NLAYERS + 2; // input + hidden layers + output
+    const padX = 50;
+    const colSpacing = (svgW - 2 * padX) / (nCols - 1);
+    const colX = [];
+    for (let c = 0; c < nCols; c++) colX.push(padX + c * colSpacing);
+    const nodeR = 12;
+
+    const layerY = (n, i) => {
+      if (n === 1) return svgH / 2;
+      const spacing = Math.min(34, (svgH - 60) / (n - 1));
+      const top = svgH / 2 - spacing * (n - 1) / 2;
+      return top + i * spacing;
+    };
+
+    let s = `<defs><marker id="aw" markerWidth="5" markerHeight="5" refX="3.5" refY="2.5" orient="auto">
+      <path d="M0,0 L0,5 L5,2.5z" fill="var(--border)"/></marker></defs>`;
+
+    function edgeColor(wVal) {
+      // Map weight magnitude to color temperature: small → cool blue, large → hot red
+      const mag = Math.min(1, Math.abs(wVal) / 3);
+      const stops = [
+        [0.0,  74, 158, 255],  // cool blue
+        [0.25, 80, 210, 180],  // teal
+        [0.5, 250, 210,  50],  // warm yellow
+        [0.75,245, 150,  50],  // orange
+        [1.0, 248, 113, 113],  // hot red
+      ];
+      let lo = stops[0], hi = stops[stops.length - 1];
+      for (let i = 0; i < stops.length - 1; i++) {
+        if (mag >= stops[i][0] && mag <= stops[i + 1][0]) { lo = stops[i]; hi = stops[i + 1]; break; }
+      }
+      const t = (hi[0] === lo[0]) ? 0 : (mag - lo[0]) / (hi[0] - lo[0]);
+      const r = Math.round(lo[1] + (hi[1] - lo[1]) * t);
+      const g = Math.round(lo[2] + (hi[2] - lo[2]) * t);
+      const b = Math.round(lo[3] + (hi[3] - lo[3]) * t);
+      return `rgb(${r},${g},${b})`;
+    }
+    function edgeW(wVal) {
+      return Math.max(1.2, Math.min(3.5, Math.abs(wVal) * 1.2));
+    }
+
+    // ── Edges: input → hidden[0] ──
+    for (let j = 0; j < LAYERS[0]; j++) {
+      const y2 = layerY(LAYERS[0], j);
+      const wVal = w[wOff[0] + j];
+      s += `<line x1="${colX[0] + nodeR}" y1="${svgH / 2}" x2="${colX[1] - nodeR}" y2="${y2}" stroke="${edgeColor(wVal)}" stroke-width="${edgeW(wVal)}"/>`;
+    }
+    // ── Edges: hidden[l-1] → hidden[l] ──
+    for (let l = 1; l < NLAYERS; l++) {
+      for (let i = 0; i < LAYERS[l - 1]; i++) {
+        const y1 = layerY(LAYERS[l - 1], i);
+        for (let j = 0; j < LAYERS[l]; j++) {
+          const y2 = layerY(LAYERS[l], j);
+          const wVal = w[wOff[l] + i * LAYERS[l] + j];
+          s += `<line x1="${colX[l] + nodeR}" y1="${y1}" x2="${colX[l + 1] - nodeR}" y2="${y2}" stroke="${edgeColor(wVal)}" stroke-width="${edgeW(wVal)}"/>`;
+        }
+      }
+    }
+    // ── Edges: hidden[last] → output ──
+    const last = NLAYERS - 1;
+    for (let i = 0; i < LAYERS[last]; i++) {
+      const y1 = layerY(LAYERS[last], i);
+      const wVal = w[wOff[NLAYERS] + i];
+      s += `<line x1="${colX[NLAYERS] + nodeR}" y1="${y1}" x2="${colX[NLAYERS + 1] - nodeR}" y2="${svgH / 2}" stroke="${edgeColor(wVal)}" stroke-width="${edgeW(wVal)}"/>`;
+    }
+
+    // ── Input node ──
+    s += `<circle cx="${colX[0]}" cy="${svgH / 2}" r="${nodeR}" fill="#1c1f2e" stroke="var(--text-muted)" stroke-width="1.5"/>`;
+    s += `<text x="${colX[0]}" y="${svgH / 2 + 4}" text-anchor="middle" font-family="monospace" font-size="11" fill="var(--text)" font-weight="700">${x.toFixed(1)}</text>`;
+
+    // ── Hidden layer nodes ──
+    const layerColors = ["var(--epoch-rnn)", "var(--epoch-embeddings)", "var(--epoch-ngram)", "var(--epoch-llm)", "var(--accent)"];
+    for (let l = 0; l < NLAYERS; l++) {
+      const stroke = layerColors[l % layerColors.length];
+      for (let i = 0; i < LAYERS[l]; i++) {
+        const y = layerY(LAYERS[l], i);
+        // LeakyReLU: clamp to visible range
+        const b = Math.max(0, Math.min(180, Math.round(Math.abs(H[l][i]) * 30)));
+        s += `<circle cx="${colX[l + 1]}" cy="${y}" r="${nodeR}" fill="rgb(${30 + b * 0.3},${30 + b * 0.6},${50 + b})" stroke="${stroke}" stroke-width="1"/>`;
+      }
+    }
+
+    // ── Output node ──
+    const outCol = colX[NLAYERS + 1];
+    s += `<circle cx="${outCol}" cy="${svgH / 2}" r="${nodeR}" fill="#1c1f2e" stroke="var(--accent)" stroke-width="2"/>`;
+    s += `<text x="${outCol}" y="${svgH / 2 + 4}" text-anchor="middle" font-family="monospace" font-size="11" fill="var(--accent)" font-weight="700">${yP.toFixed(2)}</text>`;
+
+    // ── Column labels ──
+    s += `<text x="${colX[0]}" y="${svgH - 2}" text-anchor="middle" font-size="9" fill="var(--text-muted)">x</text>`;
+    for (let l = 0; l < NLAYERS; l++) {
+      s += `<text x="${colX[l + 1]}" y="${svgH - 2}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${l + 1}</text>`;
+    }
+    s += `<text x="${outCol}" y="${svgH - 2}" text-anchor="middle" font-size="9" fill="var(--text-muted)">ŷ</text>`;
+
+    svg.innerHTML = s;
+  }
+
+  function nnUpdate() {
+    const d = nn.current;
+    const { H, yP } = nnForward(d.x, nn.w); // yP is normalized [0,1]
+    const yPReal = denorm(yP);
+    const err = yPReal - d.yReal;
+
+    drawNNDiagram(d.x, H, yPReal, nn.w);
+
+    document.getElementById("nn-pred").textContent = yPReal.toFixed(2);
+    document.getElementById("nn-true").textContent = d.yReal.toFixed(2);
+    document.getElementById("nn-step").textContent = nn.steps + 1;
+    document.getElementById("nn-nweights").textContent = NPARAMS;
+
+    const vErr = document.getElementById("nn-err");
+    vErr.textContent = (err >= 0 ? "+" : "") + err.toFixed(2);
+    vErr.className = "val-err " + (Math.abs(err) < 0.05 ? "err-zero" : err > 0 ? "err-pos" : "err-neg");
+
+    // MSE display — use exponential notation for small values
+    if (nn.errHist.length > 0) {
+      const mse = nn.errHist.reduce((a, b) => a + b, 0) / nn.errHist.length;
+      const lossEl = document.getElementById("nn-loss");
+      lossEl.textContent = mse < 0.001 ? mse.toExponential(2) : mse.toFixed(4);
+      lossEl.style.color = mse < 0.001 ? "#3fb950" : mse < 0.1 ? "var(--accent)" : "var(--epoch-llm)";
+    }
+    // Log-scale bar chart — shows relative changes even at small values
+    if (nn.lossHist.length > 0) {
+      const logs = nn.lossHist.map(l => Math.log10(Math.max(l, 1e-10)));
+      const logMin = Math.min(...logs);
+      const logMax = Math.max(...logs);
+      const logRange = logMax - logMin || 1;
+      document.getElementById("nn-loss-bars").innerHTML = logs.map(l =>
+        `<div class="loss-bar" style="height:${Math.max(2, ((l - logMin) / logRange) * 100)}%"></div>`
+      ).join("");
+    }
+
+    nnDrawViz();
+  }
+
+  function nnDrawViz() {
+    const svg = document.getElementById("nn-svg");
+    const W = 500, H = 300;
+    const pad = { top: 20, right: 20, bottom: 40, left: 65 };
+    const pw = W - pad.left - pad.right, ph = H - pad.top - pad.bottom;
+
+    const xMin = -20, xMax = 20, yMin = -5, yMax = 70;
+    const sx = x => pad.left + ((x - xMin) / (xMax - xMin)) * pw;
+    const sy = y => pad.top + ph - ((Math.max(yMin, Math.min(y, yMax)) - yMin) / (yMax - yMin)) * ph;
+    let s = "";
+
+    for (let i = -20; i <= 20; i += 10) {
+      s += `<line x1="${sx(i)}" y1="${pad.top}" x2="${sx(i)}" y2="${H - pad.bottom}" stroke="var(--border)" stroke-width="0.5"/>`;
+      s += `<text x="${sx(i)}" y="${H - pad.bottom + 18}" text-anchor="middle" fill="var(--text-muted)" font-size="11">${i}</text>`;
+    }
+    for (let i = 0; i <= 70; i += 10) {
+      s += `<line x1="${pad.left}" y1="${sy(i)}" x2="${W - pad.right}" y2="${sy(i)}" stroke="var(--border)" stroke-width="0.5"/>`;
+      s += `<text x="${pad.left - 6}" y="${sy(i) + 4}" text-anchor="end" fill="var(--text-muted)" font-size="10">${i}</text>`;
+    }
+    s += `<line x1="${pad.left}" y1="${H - pad.bottom}" x2="${W - pad.right}" y2="${H - pad.bottom}" stroke="var(--text-muted)" stroke-width="1"/>`;
+    s += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${H - pad.bottom}" stroke="var(--text-muted)" stroke-width="1"/>`;
+    s += `<line x1="${pad.left}" y1="${sy(0)}" x2="${W - pad.right}" y2="${sy(0)}" stroke="var(--text-muted)" stroke-width="0.8" stroke-dasharray="4,3"/>`;
+
+    // Target curve
+    const nSteps = 80;
+    let path = "";
+    for (let i = 0; i <= nSteps; i++) {
+      const x = xMin + (i / nSteps) * (xMax - xMin);
+      path += (i === 0 ? "M" : "L") + `${sx(x).toFixed(1)},${sy(targetFn(x)).toFixed(1)}`;
+    }
+    s += `<path d="${path}" fill="none" stroke="#3fb950" stroke-width="2" stroke-dasharray="6,4" opacity="0.7"/>`;
+
+    // Model curve
+    let mpath = "";
+    for (let i = 0; i <= nSteps; i++) {
+      const x = xMin + (i / nSteps) * (xMax - xMin);
+      mpath += (i === 0 ? "M" : "L") + `${sx(x).toFixed(1)},${sy(denorm(nnForward(x, nn.w).yP)).toFixed(1)}`;
+    }
+    s += `<path d="${mpath}" fill="none" stroke="#f59e0b" stroke-width="2.5"/>`;
+
+
+    // History
+    nn.history.forEach((d, i) => {
+      const op = Math.max(0.1, 0.6 - (nn.history.length - i) * 0.02);
+      s += `<circle cx="${sx(d.x)}" cy="${sy(d.yReal)}" r="3" fill="#3fb950" opacity="${op}"/>`;
+    });
+
+    // Current point
+    const d = nn.current;
+    const yPReal = denorm(nnForward(d.x, nn.w).yP);
+    if (Math.abs(yPReal - d.yReal) > 0.1)
+      s += `<line x1="${sx(d.x)}" y1="${sy(d.yReal)}" x2="${sx(d.x)}" y2="${sy(yPReal)}" stroke="var(--epoch-llm)" stroke-width="2.5" stroke-dasharray="3,2" opacity="0.8"/>`;
+    s += `<circle cx="${sx(d.x)}" cy="${sy(d.yReal)}" r="7" fill="#3fb950"/>`;
+    s += `<circle cx="${sx(d.x)}" cy="${sy(d.yReal)}" r="12" fill="none" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.5"/>`;
+    s += `<circle cx="${sx(d.x)}" cy="${sy(yPReal)}" r="6" fill="#f59e0b" stroke="var(--bg)" stroke-width="1.5"/>`;
+
+    s += `<text x="${W / 2}" y="${H - 4}" text-anchor="middle" fill="var(--text-muted)" font-size="12">x</text>`;
+    s += `<text x="14" y="${H / 2}" text-anchor="middle" fill="var(--text-muted)" font-size="12" transform="rotate(-90,14,${H / 2})">y</text>`;
+    svg.innerHTML = s;
+  }
+
+  // Adam optimizer state
+  const adam = {
+    m: new Array(NPARAMS).fill(0),
+    v: new Array(NPARAMS).fill(0),
+    t: 0,
+    b1: 0.9, b2: 0.999, eps: 1e-8,
+  };
+
+  function doGradStep() {
+    const lr = parseFloat(document.getElementById("nn-eps").value);
+    const batchSize = parseInt(document.getElementById("nn-batch").value);
+    const nSteps = parseInt(document.getElementById("nn-steps-per").value);
+
+    for (let s = 0; s < nSteps; s++) {
+      // Accumulate gradients over mini-batch
+      const avgGrads = new Array(NPARAMS).fill(0);
+      let batchLoss = 0;
+      for (let b = 0; b < batchSize; b++) {
+        const d = (b === 0 && s === 0) ? nn.current : nnSample();
+        const grads = nnGradients(d.x, d.yNorm, nn.w);
+        const { yP } = nnForward(d.x, nn.w);
+        batchLoss += (yP - d.yNorm) * (yP - d.yNorm);
+        for (let i = 0; i < NPARAMS; i++) avgGrads[i] += grads[i];
+      }
+      for (let i = 0; i < NPARAMS; i++) avgGrads[i] /= batchSize;
+      batchLoss /= batchSize;
+
+      // Adam update
+      adam.t++;
+      for (let i = 0; i < NPARAMS; i++) {
+        adam.m[i] = adam.b1 * adam.m[i] + (1 - adam.b1) * avgGrads[i];
+        adam.v[i] = adam.b2 * adam.v[i] + (1 - adam.b2) * avgGrads[i] * avgGrads[i];
+        const mHat = adam.m[i] / (1 - Math.pow(adam.b1, adam.t));
+        const vHat = adam.v[i] / (1 - Math.pow(adam.b2, adam.t));
+        nn.w[i] -= lr * (mHat / (Math.sqrt(vHat) + adam.eps) + 0.01 * nn.w[i]);
+      }
+
+      nn.errHist.push(batchLoss);
+      nn.lossHist.push(batchLoss);
+      if (nn.lossHist.length > nn.maxLoss) nn.lossHist.shift();
+      nn.steps++;
+    }
+
+    nn.history.push(nn.current);
+    if (nn.history.length > nn.maxPts) nn.history.shift();
+    nn.current = nnSample();
+    nnUpdate();
+  }
+
+  // Hold-to-repeat on grad step button
+  {
+    const btn = document.getElementById("nn-grad-step");
+    let interval = null;
+    function startHold() {
+      doGradStep();
+      interval = setInterval(doGradStep, 60);
+    }
+    function stopHold() {
+      if (interval) { clearInterval(interval); interval = null; }
+    }
+    btn.addEventListener("mousedown", startHold);
+    btn.addEventListener("mouseup", stopHold);
+    btn.addEventListener("mouseleave", stopHold);
+    btn.addEventListener("touchstart", (e) => { e.preventDefault(); startHold(); });
+    btn.addEventListener("touchend", stopHold);
+  }
+
+  document.getElementById("nn-reset").addEventListener("click", () => {
+    nn.w = initParams();
+    nn.steps = 0;
+    nn.history.length = 0;
+    nn.lossHist.length = 0;
+    nn.errHist.length = 0;
+    adam.m.fill(0); adam.v.fill(0); adam.t = 0;
+    nn.current = nnSample();
+    nnUpdate();
+  });
+
+  nnUpdate();
+  </script>
+</body>
+</html>
