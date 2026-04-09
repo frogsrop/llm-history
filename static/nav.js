@@ -9,6 +9,7 @@
 const MODULES = [
   { path: "/",         label: "Home",            epoch: null },
   { path: "/module/1", label: "N-gram",          epoch: "ngram" },
+  { path: "/module/1b", label: "Обучение",       epoch: null },
   { path: "/module/2", label: "RNN / LSTM",      epoch: "rnn" },
   { path: "/module/3", label: "Embeddings",      epoch: "embeddings" },
   { path: "/module/4", label: "LLM Era",         epoch: "llm" },

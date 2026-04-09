@@ -23,11 +23,15 @@ Russian is allowed only in user-facing content: corpus text, HTML templates, UI 
 ## Training
 Use the fastest available device for each model type:
 - **TinyRNN / TinyLSTM** (PyTorch, tiny vocab) — use `device = torch.device("cpu")` explicitly. GPU overhead exceeds compute for these models (CPU: ~30s, GPU: ~130s on RTX 5080).
-- **ruGPT-3 / large Transformer models** — use `device = torch.device("cuda" if torch.cuda.is_available() else "cpu")` and move all tensors/models to that device.
+- **Qwen2.5-7B-AWQ / large Transformer models** — use `device = torch.device("cuda" if torch.cuda.is_available() else "cpu")` and move all tensors/models to that device.
 
 ## PyTorch / CUDA
 RTX 5080 (Blackwell, sm_120) requires PyTorch nightly with CUDA 12.8 — stable releases do not support this GPU.
 Install: `pip install --pre --upgrade torch --index-url https://download.pytorch.org/whl/nightly/cu128`
+
+## Tokenizer & Cyrillic
+Qwen2.5 uses a SentencePiece tokenizer with native Unicode support — Cyrillic works correctly.
+For consistent token display, use `tokenizer.decode([token_id]).strip()` per token.
 
 ## Project Structure
 
@@ -38,14 +42,14 @@ Install: `pip install --pre --upgrade torch --index-url https://download.pytorch
 ├── main.py                  — FastAPI app, routes, startup hooks
 ├── corpus.py                — unified training corpus (single source of truth)
 ├── pretrain_models.py       — one-time RNN/LSTM training, saves models/rnn_models.pt
-├── download_models.py       — one-time download: ruGPT-3 large + fastText cc.ru.300.bin
-├── environment.yml          — conda environment (use conda, not pip)
+├── download_models.py       — one-time download: Qwen2.5-7B-AWQ + fastText cc.ru.300.bin
+├── requirements.txt         — pip dependencies
 ├── pytest.ini               — pytest config
 ├── routers/
 │   ├── ngram.py             — N-gram / Markov chain API
 │   ├── rnn.py               — TinyRNN + TinyLSTM (PyTorch), pretraining cache, /vocab endpoint
-│   ├── embeddings.py        — fastText word vectors, analogy API (not yet implemented)
-│   └── llm_era.py           — ruGPT-3 large attention + generation (not yet implemented)
+│   ├── embeddings.py        — fastText word vectors, analogy API
+│   └── llm_era.py           — Qwen2.5-7B-AWQ attention + generation
 ├── static/
 │   ├── style.css            — dark theme, epoch color coding
 │   ├── nav.js               — sidebar, prev/next, localStorage progress
@@ -60,8 +64,7 @@ Install: `pip install --pre --upgrade torch --index-url https://download.pytorch
 │   └── module-5-compare.html — final comparison
 ├── models/
 │   ├── rnn_models.pt        — pretrained RNN/LSTM weights (regenerate with pretrain_models.py)
-│   ├── rugpt3large/         — ruGPT-3 large weights (ai-forever/rugpt3large_based_on_gpt2)
-│   ├── rugpt3xl/            — ruGPT-3 XL weights
+│   ├── qwen2.5-7b-awq/      — Qwen2.5-7B-AWQ weights (Qwen/Qwen2.5-7B-AWQ)
 │   └── cc.ru.300.bin        — fastText Russian vectors (cc.ru.300.bin, ~2.6GB)
 ├── data/
 │   └── corpus.txt           — raw corpus sentences (one per line)
@@ -82,18 +85,20 @@ Completed steps (see PLAN.md for full checklist):
 - **Step 4** — `module-1-ngram.html`: N-gram table, generator, seed control
 - **Step 5** — `module-2-rnn-lstm.html`: TinyRNN + TinyLSTM (PyTorch), hidden size slider, SVG animation (corpus-adaptive via /api/rnn/vocab)
 - **Step 6** — `module-3-embeddings.html`: fastText vectors, 2D PCA word map, analogy arithmetic, before/after comparison
+- **Step 7** — `module-4-llm-era.html`: Seq2Seq animation, attention heatmap (Qwen2.5-7B-AWQ, per-head view), cumulative toggles, temperature-controlled generation
 
 Pending:
-- **Step 7** — `module-4-llm-era.html` (attention heatmap, ruGPT-3 generation)
 - **Step 8** — `module-5-compare.html` (side-by-side comparison)
 - **Steps 9–10** — corpus tuning, tooltip texts
 
 ## Running
 
 ```bash
-conda activate llm-explainer
-uvicorn main:app --reload        # start server → http://localhost:8000
-python pretrain_models.py        # retrain RNN/LSTM after corpus changes
-python download_models.py        # one-time model download
-pytest tests/ -v                 # run all tests
+uv sync                          # install all dependencies (creates .venv automatically)
+uv pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cu128  # PyTorch for RTX 5080
+
+uv run uvicorn main:app --reload # start server → http://localhost:8000
+uv run python pretrain_models.py # retrain RNN/LSTM after corpus changes
+uv run python download_models.py # one-time model download
+uv run pytest tests/ -v          # run all tests
 ```

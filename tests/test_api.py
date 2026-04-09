@@ -186,10 +186,99 @@ def test_embeddings_status(client):
 
 
 # --- LLM-era API (Step 7) ---
-# def test_llm_attention(client):
-#     r = client.get("/api/llm-era/attention?sentence=the cat sat on the mat")
-#     assert r.status_code == 200
+def test_llm_status(client):
+    r = client.get("/api/llm-era/status")
+    assert r.status_code == 200
+    data = r.json()
+    assert "ready" in data
+    assert "seq2seq_ready" in data
+    assert "bert_ready" not in data  # BERT removed, attention uses GPT now
 
-# def test_llm_generate(client):
-#     r = client.post("/api/llm-era/generate", json={"prompt": "the cat sat"})
-#     assert r.status_code == 200
+def test_llm_seq2seq_generate(client):
+    r = client.get("/api/llm-era/seq2seq/generate?start=кот&words=5")
+    assert r.status_code == 200
+    data = r.json()
+    assert "input" in data
+    assert "words" in data
+    assert isinstance(data["words"], list)
+    assert len(data["words"]) >= 1
+    assert data["bottleneck_size"] == 64
+
+def test_llm_seq2seq_generate_default(client):
+    r = client.get("/api/llm-era/seq2seq/generate")
+    assert r.status_code == 200
+    data = r.json()
+    assert "words" in data
+    assert len(data["words"]) >= 1
+
+def test_llm_seq2seq_vocab(client):
+    r = client.get("/api/llm-era/seq2seq/vocab")
+    assert r.status_code == 200
+    data = r.json()
+    assert "vocab" in data
+    assert len(data["vocab"]) > 10
+
+def test_llm_attention(client):
+    r = client.get("/api/llm-era/attention?sentence=кот сидел у окна и смотрел на дождь")
+    assert r.status_code == 200
+    data = r.json()
+    assert "tokens" in data
+    assert "weights" in data
+    assert isinstance(data["weights"], list)
+    n = len(data["tokens"])
+    assert len(data["weights"]) == n
+    assert len(data["weights"][0]) == n
+    assert data["model"] == "Qwen2.5-3B"
+    assert data["causal"] is True
+    assert data["total_heads"] > 0
+    assert data["total_layers"] > 0
+
+def test_llm_attention_default_sentence(client):
+    """Attention endpoint works with no sentence (uses corpus default)."""
+    r = client.get("/api/llm-era/attention")
+    assert r.status_code == 200
+    data = r.json()
+    assert "tokens" in data
+    assert "weights" in data
+
+def test_llm_attention_specific_head(client):
+    """Requesting a specific head returns non-averaged weights."""
+    r = client.get("/api/llm-era/attention?sentence=кот сидел&head=1")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["head"] == 1
+    assert len(data["tokens"]) > 0
+
+def test_llm_attention_avg_heads(client):
+    """head=0 returns averaged weights."""
+    r = client.get("/api/llm-era/attention?sentence=кот сидел&head=0")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["head"] == 0
+
+def test_llm_generate(client):
+    r = client.post("/api/llm-era/generate", json={"prompt": "кот сидел у окна", "temperature": 0.7, "max_tokens": 20})
+    assert r.status_code == 200
+    data = r.json()
+    assert "text" in data
+    assert len(data["text"]) > 0
+
+def test_llm_generate_temperature(client):
+    """Different temperatures produce results."""
+    for temp in [0.3, 0.7, 1.2]:
+        r = client.post("/api/llm-era/generate", json={"prompt": "кот", "temperature": temp, "max_tokens": 10})
+        assert r.status_code == 200
+        assert "text" in r.json()
+
+def test_llm_generate_no_fewshot_leak(client):
+    """Few-shot prefix markers must not appear in the returned text."""
+    r = client.post("/api/llm-era/generate", json={
+        "prompt": "джон стрелял по замку из пистолета, чтобы",
+        "temperature": 0.5,
+        "max_tokens": 20,
+    })
+    assert r.status_code == 200
+    data = r.json()
+    assert "Начало:" not in data["text"]
+    assert "Продолжение:" not in data["text"]
+    assert data["text"].startswith(data["prompt"])

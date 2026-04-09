@@ -68,7 +68,7 @@
     .val-true { color: #3fb950; }
     .val-err { font-weight: 700; }
     .err-pos { color: var(--epoch-llm); }
-    .err-neg { color: #58a6ff; }
+    .err-neg { color: #F87171; }
     .err-zero { color: #3fb950; }
 
     .calc-line {
@@ -254,38 +254,57 @@
          SLIDE 1: Linear  y = x × w
          ════════════════════════════════════════════════════ -->
     <div id="slide-linear">
-      <div class="card">
-        <div class="train-column">
-          <div class="formula-header">y&#x302; = x &times; w</div>
-          <div class="calc-stack">
-            <div class="calc-row">
-              <span class="calc-label">x</span>
-              <span class="calc-val val-x" id="v-x">3.0</span>
-            </div>
-            <div class="calc-row">
-              <span class="calc-label">w</span>
-              <span class="calc-op">&times;</span>
-              <span class="calc-val val-w" id="v-w">0.50</span>
-            </div>
-            <div class="calc-line"></div>
-            <div class="calc-row">
-              <span class="calc-label">y&#x302;</span>
-              <span class="calc-val val-pred" id="v-pred">1.50</span>
-            </div>
-            <div class="calc-row">
-              <span class="calc-label">y</span>
-              <span class="calc-val val-true" id="v-true">6.0</span>
-            </div>
-            <div class="calc-dline"></div>
-            <div class="calc-row">
-              <span class="calc-label">y&#x302; &minus; y</span>
-              <span class="calc-val val-err" id="v-err">-4.50</span>
-            </div>
+      <!-- ── Neuron diagram + example card ─────────────── -->
+      <div class="card" style="padding:28px 24px;">
+        <div style="display:flex; align-items:center; justify-content:center; gap:24px; flex-wrap:wrap;">
+          <!-- Neuron SVG -->
+          <svg id="lin-neuron" viewBox="0 0 440 160" style="width:440px; height:160px; flex-shrink:0;">
+            <!-- x node -->
+            <circle cx="70" cy="80" r="50" fill="var(--bg)" stroke="var(--text-muted)" stroke-width="3"/>
+            <text x="70" y="68" text-anchor="middle" fill="var(--text-muted)" font-size="18">x</text>
+            <text x="70" y="96" text-anchor="middle" fill="var(--text)" font-size="30" font-weight="700" id="nv-x">2</text>
+            <!-- edge -->
+            <line x1="120" y1="80" x2="268" y2="80" stroke="#a78bfa" stroke-width="4"/>
+            <text x="195" y="65" text-anchor="middle" fill="#a78bfa" font-size="22" font-weight="700">w = <tspan id="nv-w">0.50</tspan></text>
+            <!-- arrow -->
+            <polygon points="264,70 284,80 264,90" fill="#a78bfa"/>
+            <!-- ŷ node -->
+            <circle cx="340" cy="80" r="50" fill="var(--bg)" stroke="var(--accent)" stroke-width="3"/>
+            <text x="340" y="68" text-anchor="middle" fill="var(--text-muted)" font-size="18">ŷ</text>
+            <text x="340" y="100" text-anchor="middle" fill="var(--accent)" font-size="32" font-weight="700" id="nv-pred">1</text>
+          </svg>
+          <!-- Example card -->
+          <div style="background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius);
+                      padding:14px 22px; font-family:monospace; font-size:16px; line-height:1.8;">
+            <div>x = <strong style="color:var(--text);" id="v-x">2.0</strong></div>
+            <div>y = <strong style="color:#3fb950;" id="v-true">4.0</strong></div>
           </div>
+        </div>
+      </div>
 
-          <div class="train-controls">
-            <button class="eps-btn" id="lin-btn-minus">&minus; &epsilon;</button>
-            <div class="eps-selector">
+      <!-- ── Error line ────────────────────────────────── -->
+      <div class="card" style="padding:20px 24px; text-align:center;">
+        <div style="font-family:monospace; font-size:26px; letter-spacing:1px;">
+          <span style="color:var(--accent);">ŷ</span>
+          <span style="color:var(--text-muted);"> &minus; </span>
+          <span style="color:#3fb950;">y</span>
+          <span style="color:var(--text-muted);"> = </span>
+          <span style="color:var(--accent);" id="v-pred">1.00</span>
+          <span style="color:var(--text-muted);"> &minus; </span>
+          <span style="color:#3fb950;" id="v-true2">4.0</span>
+          <span style="color:var(--text-muted);"> = </span>
+          <span class="val-err" id="v-err" style="font-weight:700;">-3.00</span>
+        </div>
+      </div>
+
+      <!-- ── Controls: −ε  w  +ε ───────────────────────── -->
+      <div class="card" style="padding:20px 24px;">
+        <div style="display:flex; align-items:center; justify-content:center; gap:20px;">
+          <button class="eps-btn" id="lin-btn-minus" style="font-size:22px; padding:16px 38px;">&minus; e</button>
+          <div style="text-align:center; font-family:monospace;">
+            <div style="font-size:13px; color:var(--text-muted);">w</div>
+            <div style="font-size:28px; font-weight:700; color:#a78bfa;" id="v-w">0.50</div>
+            <div class="eps-selector" style="margin-top:6px;">
               <label for="lin-eps">&epsilon; =</label>
               <select id="lin-eps">
                 <option value="0.01">0.01</option>
@@ -295,12 +314,12 @@
                 <option value="1.0">1.0</option>
               </select>
             </div>
-            <button class="eps-btn" id="lin-btn-plus">+ &epsilon;</button>
           </div>
-          <div class="meta-row">
-            <div class="step-counter">Пример #<strong id="lin-step">1</strong></div>
-            <button class="reset-btn" id="lin-reset">Сбросить</button>
-          </div>
+          <button class="eps-btn" id="lin-btn-plus" style="font-size:22px; padding:16px 38px;">+ e</button>
+        </div>
+        <div class="meta-row" style="margin-top:16px;">
+          <div class="step-counter">Пример #<strong id="lin-step">1</strong></div>
+          <button class="reset-btn" id="lin-reset">Сбросить</button>
         </div>
       </div>
 
@@ -339,19 +358,23 @@
         <div class="train-column">
           <!-- Live network diagram -->
           <svg id="nn-diagram" width="100%" height="400" viewBox="0 0 700 400" style="max-width:700px;"></svg>
+        </div>
+      </div>
 
+      <div class="card">
+        <div class="train-column">
           <!-- Prediction summary -->
-          <div style="display:flex; gap:32px; justify-content:center; margin-top:12px; font-family:monospace; font-size:18px;">
+          <div style="display:flex; gap:32px; justify-content:center; font-family:monospace; font-size:18px;">
             <div style="text-align:center;">
-              <div style="font-size:12px; color:var(--text-muted);">y&#x302;</div>
+              <div style="font-size:16px; color:var(--text-muted);">y&#x302;</div>
               <div style="color:var(--accent); font-weight:700;" id="nn-pred">0.00</div>
             </div>
             <div style="text-align:center;">
-              <div style="font-size:12px; color:var(--text-muted);">y</div>
+              <div style="font-size:16px; color:var(--text-muted);">y</div>
               <div style="color:#3fb950; font-weight:700;" id="nn-true">0.00</div>
             </div>
             <div style="text-align:center;">
-              <div style="font-size:12px; color:var(--text-muted);">y&#x302; &minus; y</div>
+              <div style="font-size:16px; color:var(--text-muted);">y&#x302; &minus; y</div>
               <div class="val-err" id="nn-err" style="font-weight:700;">0.00</div>
             </div>
           </div>
@@ -474,22 +497,28 @@
     const yP = d.x * lin.w;
     const err = yP - d.y;
 
-    document.getElementById("v-x").textContent    = d.x.toFixed(1);
-    document.getElementById("v-w").textContent     = lin.w.toFixed(2);
-    document.getElementById("v-pred").textContent  = yP.toFixed(2);
-    document.getElementById("v-true").textContent  = d.y.toFixed(1);
+    // Neuron SVG
+    document.getElementById("nv-x").textContent    = d.x.toFixed(1);
+    document.getElementById("nv-w").textContent     = lin.w.toFixed(2);
+    document.getElementById("nv-pred").textContent  = yP.toFixed(2);
+    // Example card
+    document.getElementById("v-x").textContent      = d.x.toFixed(1);
+    document.getElementById("v-true").textContent   = d.y.toFixed(1);
+    // Error line
+    document.getElementById("v-pred").textContent   = yP.toFixed(2);
+    document.getElementById("v-true2").textContent  = d.y.toFixed(1);
+    // Weight + step
+    document.getElementById("v-w").textContent      = lin.w.toFixed(2);
     document.getElementById("lin-step").textContent = lin.steps + 1;
 
     const vErr = document.getElementById("v-err");
     vErr.textContent = (err >= 0 ? "+" : "") + err.toFixed(2);
-    vErr.className = "calc-val val-err " + (Math.abs(err) < 0.005 ? "err-zero" : err > 0 ? "err-pos" : "err-neg");
+    vErr.className = "val-err " + (Math.abs(err) < 0.005 ? "err-zero" : err > 0 ? "err-pos" : "err-neg");
 
     // Flash
     vErr.classList.remove("flash");
-    document.getElementById("v-pred").classList.remove("flash");
     void vErr.offsetWidth;
     vErr.classList.add("flash");
-    document.getElementById("v-pred").classList.add("flash");
 
     // MSE
     lin.errHist.push(err * err);
@@ -733,11 +762,12 @@
     const colSpacing = (svgW - 2 * padX) / (nCols - 1);
     const colX = [];
     for (let c = 0; c < nCols; c++) colX.push(padX + c * colSpacing);
-    const nodeR = 12;
+    const nodeR = 20;
+    const bigR = nodeR * 2;
 
     const layerY = (n, i) => {
       if (n === 1) return svgH / 2;
-      const spacing = Math.min(34, (svgH - 60) / (n - 1));
+      const spacing = Math.min(52, (svgH - 60) / (n - 1));
       const top = svgH / 2 - spacing * (n - 1) / 2;
       return top + i * spacing;
     };
@@ -773,7 +803,7 @@
     for (let j = 0; j < LAYERS[0]; j++) {
       const y2 = layerY(LAYERS[0], j);
       const wVal = w[wOff[0] + j];
-      s += `<line x1="${colX[0] + nodeR}" y1="${svgH / 2}" x2="${colX[1] - nodeR}" y2="${y2}" stroke="${edgeColor(wVal)}" stroke-width="${edgeW(wVal)}"/>`;
+      s += `<line x1="${colX[0] + bigR}" y1="${svgH / 2}" x2="${colX[1] - nodeR}" y2="${y2}" stroke="${edgeColor(wVal)}" stroke-width="${edgeW(wVal)}"/>`;
     }
     // ── Edges: hidden[l-1] → hidden[l] ──
     for (let l = 1; l < NLAYERS; l++) {
@@ -791,12 +821,13 @@
     for (let i = 0; i < LAYERS[last]; i++) {
       const y1 = layerY(LAYERS[last], i);
       const wVal = w[wOff[NLAYERS] + i];
-      s += `<line x1="${colX[NLAYERS] + nodeR}" y1="${y1}" x2="${colX[NLAYERS + 1] - nodeR}" y2="${svgH / 2}" stroke="${edgeColor(wVal)}" stroke-width="${edgeW(wVal)}"/>`;
+      s += `<line x1="${colX[NLAYERS] + nodeR}" y1="${y1}" x2="${colX[NLAYERS + 1] - bigR}" y2="${svgH / 2}" stroke="${edgeColor(wVal)}" stroke-width="${edgeW(wVal)}"/>`;
     }
 
-    // ── Input node ──
-    s += `<circle cx="${colX[0]}" cy="${svgH / 2}" r="${nodeR}" fill="#1c1f2e" stroke="var(--text-muted)" stroke-width="1.5"/>`;
-    s += `<text x="${colX[0]}" y="${svgH / 2 + 4}" text-anchor="middle" font-family="monospace" font-size="11" fill="var(--text)" font-weight="700">${x.toFixed(1)}</text>`;
+    // ── Input node (2× size) ──
+    s += `<circle cx="${colX[0]}" cy="${svgH / 2}" r="${bigR}" fill="#1c1f2e" stroke="var(--text-muted)" stroke-width="3"/>`;
+    s += `<text x="${colX[0]}" y="${svgH / 2 - 6}" text-anchor="middle" font-family="monospace" font-size="13" fill="var(--text-muted)">x</text>`;
+    s += `<text x="${colX[0]}" y="${svgH / 2 + 12}" text-anchor="middle" font-family="monospace" font-size="18" fill="var(--text)" font-weight="700">${x.toFixed(1)}</text>`;
 
     // ── Hidden layer nodes ──
     const layerColors = ["var(--epoch-rnn)", "var(--epoch-embeddings)", "var(--epoch-ngram)", "var(--epoch-llm)", "var(--accent)"];
@@ -806,21 +837,22 @@
         const y = layerY(LAYERS[l], i);
         // LeakyReLU: clamp to visible range
         const b = Math.max(0, Math.min(180, Math.round(Math.abs(H[l][i]) * 30)));
-        s += `<circle cx="${colX[l + 1]}" cy="${y}" r="${nodeR}" fill="rgb(${30 + b * 0.3},${30 + b * 0.6},${50 + b})" stroke="${stroke}" stroke-width="1"/>`;
+        s += `<circle cx="${colX[l + 1]}" cy="${y}" r="${nodeR}" fill="rgb(${30 + b * 0.3},${30 + b * 0.6},${50 + b})" stroke="${stroke}" stroke-width="1.5"/>`;
       }
     }
 
-    // ── Output node ──
+    // ── Output node (2× size) ──
     const outCol = colX[NLAYERS + 1];
-    s += `<circle cx="${outCol}" cy="${svgH / 2}" r="${nodeR}" fill="#1c1f2e" stroke="var(--accent)" stroke-width="2"/>`;
-    s += `<text x="${outCol}" y="${svgH / 2 + 4}" text-anchor="middle" font-family="monospace" font-size="11" fill="var(--accent)" font-weight="700">${yP.toFixed(2)}</text>`;
+    s += `<circle cx="${outCol}" cy="${svgH / 2}" r="${bigR}" fill="#1c1f2e" stroke="var(--accent)" stroke-width="3"/>`;
+    s += `<text x="${outCol}" y="${svgH / 2 - 6}" text-anchor="middle" font-family="monospace" font-size="13" fill="var(--text-muted)">ŷ</text>`;
+    s += `<text x="${outCol}" y="${svgH / 2 + 12}" text-anchor="middle" font-family="monospace" font-size="18" fill="var(--accent)" font-weight="700">${yP.toFixed(2)}</text>`;
 
     // ── Column labels ──
-    s += `<text x="${colX[0]}" y="${svgH - 2}" text-anchor="middle" font-size="9" fill="var(--text-muted)">x</text>`;
+    s += `<text x="${colX[0]}" y="${svgH - 2}" text-anchor="middle" font-size="14" fill="var(--text-muted)">x</text>`;
     for (let l = 0; l < NLAYERS; l++) {
-      s += `<text x="${colX[l + 1]}" y="${svgH - 2}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${l + 1}</text>`;
+      s += `<text x="${colX[l + 1]}" y="${svgH - 2}" text-anchor="middle" font-size="14" fill="var(--text-muted)">${l + 1}</text>`;
     }
-    s += `<text x="${outCol}" y="${svgH - 2}" text-anchor="middle" font-size="9" fill="var(--text-muted)">ŷ</text>`;
+    s += `<text x="${outCol}" y="${svgH - 2}" text-anchor="middle" font-size="14" fill="var(--text-muted)">ŷ</text>`;
 
     svg.innerHTML = s;
   }

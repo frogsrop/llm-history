@@ -12,6 +12,9 @@ models/
 # Claude internal
 .claude/
 
+# Virtual environment
+.venv/
+
 # OS
 .DS_Store
 Thumbs.db

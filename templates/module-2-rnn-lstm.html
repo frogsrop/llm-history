@@ -47,7 +47,7 @@
   <nav id="sidebar"></nav>
   <main id="main-content">
     <h1 class="section-title"><span class="epoch-bar epoch-rnn"></span>RNN / LSTM</h1>
-    <p class="section-sub">1986–1997 — нейронная сеть с памятью о прошлом</p>
+    <p class="section-sub">1986–2015 — нейронная сеть с памятью о прошлом</p>
 
     <div class="mode-toggle">
       <button class="mode-btn active" id="btn-rnn">RNN</button>
@@ -73,46 +73,46 @@
 
           <!-- ── EXPANDED CELL ── -->
 
-          <!-- h_{t-1} from left -->
-          <text x="44" y="91" font-family="Segoe UI" font-size="12" fill="#A855F7" text-anchor="middle" font-weight="600">h_{t-1}</text>
-          <text x="44" y="104" font-family="Segoe UI" font-size="10" fill="var(--text-muted)" text-anchor="middle">память</text>
-          <line x1="82" y1="96" x2="272" y2="96" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)"/>
-          <text x="177" y="90" font-family="Segoe UI" font-size="10" fill="var(--text-muted)" text-anchor="middle">Wh · h</text>
+          <!-- h_{t-1} from left (INPUT — blue) -->
+          <text x="44" y="91" font-family="Segoe UI" font-size="12" fill="#a5d6ff" text-anchor="middle" font-weight="600">h_{t-1}</text>
+          <text x="44" y="104" font-family="Segoe UI" font-size="10" fill="#a5d6ff" text-anchor="middle" opacity="0.5">память</text>
+          <line x1="82" y1="96" x2="272" y2="96" fill="none" stroke="#a5d6ff" stroke-width="1.8" marker-end="url(#arrX)"/>
+          <text x="177" y="90" font-family="Segoe UI" font-size="10" fill="#A855F7" text-anchor="middle" opacity="0.3">Wh · h</text>
 
           <!-- Cell box -->
           <rect x="236" y="56" width="200" height="82" rx="8" class="rnn-cell"/>
 
           <!-- ⊕ node (сумматор) -->
-          <circle cx="286" cy="97" r="12" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5"/>
-          <text x="286" y="102" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle">⊕</text>
+          <circle cx="286" cy="97" r="12" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5" opacity="0.3"/>
+          <text x="286" y="102" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle" opacity="0.3">⊕</text>
 
-          <!-- x_t from below into ⊕ -->
+          <!-- x_t from below into ⊕ (INPUT — blue) -->
           <line x1="286" y1="168" x2="286" y2="110" fill="none" stroke="#a5d6ff" stroke-width="1.8" marker-end="url(#arrX)"/>
           <text x="302" y="163" font-family="Segoe UI" font-size="12" fill="#a5d6ff">x_t</text>
-          <text x="302" y="145" font-family="Segoe UI" font-size="10" fill="var(--text-muted)">Wx · x</text>
+          <text x="302" y="145" font-family="Segoe UI" font-size="10" fill="#A855F7" opacity="0.3">Wx · x</text>
 
           <!-- ⊕ → tanh (inside cell) -->
-          <line x1="298" y1="97" x2="318" y2="97" fill="none" stroke="#A855F7" stroke-width="1.5" marker-end="url(#arrH)"/>
+          <line x1="298" y1="97" x2="318" y2="97" fill="none" stroke="#A855F7" stroke-width="1.5" marker-end="url(#arrH)" opacity="0.3"/>
 
           <!-- tanh box -->
-          <rect x="322" y="83" width="52" height="28" rx="5" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5"/>
-          <text x="348" y="101" font-family="Segoe UI" font-size="12" fill="#A855F7" text-anchor="middle">tanh</text>
+          <rect x="322" y="83" width="52" height="28" rx="5" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5" opacity="0.3"/>
+          <text x="348" y="101" font-family="Segoe UI" font-size="12" fill="#A855F7" text-anchor="middle" opacity="0.3">tanh</text>
 
-          <!-- h_t exits cell, then branches -->
-          <line x1="374" y1="97" x2="408" y2="97" fill="none" stroke="#A855F7" stroke-width="1.8"/>
-          <circle cx="410" cy="97" r="3.5" fill="#A855F7"/>
+          <!-- h_t exits cell, then branches (OUTPUT — green) -->
+          <line x1="374" y1="97" x2="408" y2="97" fill="none" stroke="#3fb950" stroke-width="1.8" opacity="0.4"/>
+          <circle cx="410" cy="97" r="3.5" fill="#3fb950"/>
           <!-- → next step -->
-          <line x1="410" y1="97" x2="616" y2="97" fill="none" stroke="#A855F7" stroke-width="1.8" marker-end="url(#arrH)" class="anim"/>
-          <text x="512" y="90" font-family="Segoe UI" font-size="12" fill="#A855F7" text-anchor="middle">h_t</text>
-          <text x="512" y="103" font-family="Segoe UI" font-size="10" fill="var(--text-muted)" text-anchor="middle">новая память</text>
+          <line x1="410" y1="97" x2="616" y2="97" fill="none" stroke="#3fb950" stroke-width="1.8" marker-end="url(#arrOut)" class="anim"/>
+          <text x="512" y="90" font-family="Segoe UI" font-size="12" fill="#3fb950" text-anchor="middle">h_t</text>
+          <text x="512" y="103" font-family="Segoe UI" font-size="10" fill="#3fb950" text-anchor="middle" opacity="0.5">новая память</text>
           <!-- → y(next) upward -->
           <line x1="410" y1="93" x2="410" y2="27" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#arrOut)"/>
-          <text x="424" y="62" font-family="Segoe UI" font-size="10" fill="var(--text-muted)">W_out</text>
+          <text x="424" y="62" font-family="Segoe UI" font-size="10" fill="#A855F7" opacity="0.3">W_out</text>
           <rect x="376" y="8" width="68" height="20" rx="4" fill="var(--bg-hover)" stroke="#3fb950" stroke-width="1"/>
           <text x="410" y="22" font-family="Segoe UI" font-size="11" fill="#3fb950" text-anchor="middle">y (next)</text>
 
           <!-- Formula + description -->
-          <text x="350" y="178" font-family="Segoe UI" font-size="11" fill="var(--text-muted)" text-anchor="middle">h_t = tanh( Wh·h_{t-1} + Wx·x_t ) — одни и те же веса W на каждом шаге</text>
+          <text x="350" y="178" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.25">h_t = tanh( Wh·h_{t-1} + Wx·x_t ) — одни и те же веса W на каждом шаге</text>
 
         </svg>
       </div>
@@ -120,145 +120,145 @@
       <div class="rnn-svg-wrap" id="svg-lstm" style="display:none">
         <svg class="diagram-svg" viewBox="0 0 720 310" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <marker id="arrHL" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#9b59b6"/></marker>
-            <marker id="arrC"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#f1948a"/></marker>
-            <marker id="arrG"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#c39bd3"/></marker>
+            <marker id="arrHL" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
+            <marker id="arrC"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
+            <marker id="arrG"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
             <marker id="arrOut2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#3fb950"/></marker>
             <marker id="arrX2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#a5d6ff"/></marker>
           </defs>
 
           <!-- ── LEGEND ── -->
-          <line x1="16" y1="16" x2="46" y2="16" stroke="#f1948a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrC)"/>
-          <text x="52" y="20" font-family="Segoe UI" font-size="10" fill="#f1948a">cell state C (долговременная память — конвейер)</text>
-          <line x1="16" y1="32" x2="46" y2="32" stroke="#9b59b6" stroke-width="1.8" marker-end="url(#arrHL)"/>
-          <text x="52" y="36" font-family="Segoe UI" font-size="10" fill="#9b59b6">hidden state h (рабочий выход)</text>
+          <line x1="16" y1="16" x2="46" y2="16" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX2)"/>
+          <text x="52" y="20" font-family="Segoe UI" font-size="10" fill="#a5d6ff">вход (input)</text>
+          <line x1="16" y1="32" x2="46" y2="32" stroke="#3fb950" stroke-width="1.8" marker-end="url(#arrOut2)"/>
+          <text x="52" y="36" font-family="Segoe UI" font-size="10" fill="#3fb950">выход (output)</text>
 
           <!-- ── CELL BOX ── -->
           <rect x="160" y="52" width="400" height="200" rx="10" class="rnn-cell-lstm"/>
 
-          <!-- ══════ CELL STATE LANE (top, pink dashed) ══════ -->
+          <!-- ══════ CELL STATE LANE (top, dashed) ══════ -->
 
-          <!-- C_{t-1} input -->
-          <text x="44" y="82" font-family="Segoe UI" font-size="12" fill="#f1948a" text-anchor="middle" font-weight="600">C_{t-1}</text>
-          <text x="44" y="95" font-family="Segoe UI" font-size="9" fill="var(--text-muted)" text-anchor="middle">долгая</text>
-          <text x="44" y="105" font-family="Segoe UI" font-size="9" fill="var(--text-muted)" text-anchor="middle">память</text>
-          <line x1="80" y1="82" x2="208" y2="82" stroke="#f1948a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrC)" class="anim"/>
+          <!-- C_{t-1} input (blue) -->
+          <text x="44" y="82" font-family="Segoe UI" font-size="12" fill="#a5d6ff" text-anchor="middle" font-weight="600">C_{t-1}</text>
+          <text x="44" y="95" font-family="Segoe UI" font-size="9" fill="#a5d6ff" text-anchor="middle" opacity="0.5">долгая</text>
+          <text x="44" y="105" font-family="Segoe UI" font-size="9" fill="#a5d6ff" text-anchor="middle" opacity="0.5">память</text>
+          <line x1="80" y1="82" x2="208" y2="82" stroke="#a5d6ff" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrX2)" class="anim"/>
 
           <!-- × f_t (forget multiply) -->
-          <circle cx="220" cy="82" r="14" fill="#1c1f2e" stroke="#e74c3c" stroke-width="1.5"/>
-          <text x="220" y="87" font-family="Segoe UI" font-size="14" fill="#e74c3c" text-anchor="middle">×</text>
-          <text x="220" y="68" font-family="Segoe UI" font-size="9" fill="#e74c3c" text-anchor="middle">забыть</text>
+          <circle cx="220" cy="82" r="14" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5" opacity="0.3"/>
+          <text x="220" y="87" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle" opacity="0.3">×</text>
+          <text x="220" y="68" font-family="Segoe UI" font-size="9" fill="#A855F7" text-anchor="middle" opacity="0.3">забыть</text>
 
           <!-- × f_t → ⊕ -->
-          <line x1="234" y1="82" x2="348" y2="82" stroke="#f1948a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrC)"/>
+          <line x1="234" y1="82" x2="348" y2="82" stroke="#A855F7" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.3"/>
 
           <!-- ⊕ (add node) -->
-          <circle cx="360" cy="82" r="14" fill="#1c1f2e" stroke="#f1948a" stroke-width="1.5"/>
-          <text x="360" y="87" font-family="Segoe UI" font-size="14" fill="#f1948a" text-anchor="middle">⊕</text>
+          <circle cx="360" cy="82" r="14" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5" opacity="0.3"/>
+          <text x="360" y="87" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle" opacity="0.3">⊕</text>
 
-          <!-- ⊕ → C_t output -->
-          <line x1="374" y1="82" x2="530" y2="82" stroke="#f1948a" stroke-width="1.5" stroke-dasharray="4,3" class="anim"/>
+          <!-- ⊕ → C_t output (green) -->
+          <line x1="374" y1="82" x2="530" y2="82" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="4,3" class="anim"/>
           <!-- C_t branch point -->
-          <circle cx="532" cy="82" r="3" fill="#f1948a"/>
+          <circle cx="532" cy="82" r="3" fill="#3fb950"/>
           <!-- C_t → right (next step) -->
-          <line x1="532" y1="82" x2="680" y2="82" stroke="#f1948a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrC)" class="anim"/>
-          <text x="648" y="74" font-family="Segoe UI" font-size="12" fill="#f1948a" text-anchor="middle" font-weight="600">C_t</text>
+          <line x1="532" y1="82" x2="680" y2="82" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrOut2)" class="anim"/>
+          <text x="648" y="74" font-family="Segoe UI" font-size="12" fill="#3fb950" text-anchor="middle" font-weight="600">C_t</text>
 
           <!-- C_t → tanh (down to output section) -->
-          <line x1="532" y1="82" x2="532" y2="180" stroke="#f1948a" stroke-width="1.2" stroke-dasharray="3,2"/>
+          <line x1="532" y1="82" x2="532" y2="180" stroke="#A855F7" stroke-width="1.2" stroke-dasharray="3,2" opacity="0.3"/>
 
           <!-- ══════ GATES (middle section) ══════ -->
 
-          <!-- h_{t-1} input -->
-          <text x="44" y="178" font-family="Segoe UI" font-size="12" fill="#9b59b6" text-anchor="middle" font-weight="600">h_{t-1}</text>
-          <text x="44" y="191" font-family="Segoe UI" font-size="9" fill="var(--text-muted)" text-anchor="middle">рабочая</text>
-          <text x="44" y="201" font-family="Segoe UI" font-size="9" fill="var(--text-muted)" text-anchor="middle">память</text>
-          <line x1="80" y1="180" x2="168" y2="180" stroke="#9b59b6" stroke-width="1.8" marker-end="url(#arrHL)"/>
+          <!-- h_{t-1} input (blue) -->
+          <text x="44" y="178" font-family="Segoe UI" font-size="12" fill="#a5d6ff" text-anchor="middle" font-weight="600">h_{t-1}</text>
+          <text x="44" y="191" font-family="Segoe UI" font-size="9" fill="#a5d6ff" text-anchor="middle" opacity="0.5">рабочая</text>
+          <text x="44" y="201" font-family="Segoe UI" font-size="9" fill="#a5d6ff" text-anchor="middle" opacity="0.5">память</text>
+          <line x1="80" y1="180" x2="168" y2="180" stroke="#a5d6ff" stroke-width="1.8" marker-end="url(#arrX2)"/>
 
           <!-- h_{t-1} branch point -->
-          <circle cx="172" cy="180" r="3" fill="#9b59b6"/>
+          <circle cx="172" cy="180" r="3" fill="#a5d6ff"/>
 
-          <!-- x_t input from below -->
+          <!-- x_t input from below (blue) -->
           <text x="172" y="290" font-family="Segoe UI" font-size="12" fill="#a5d6ff" text-anchor="middle" font-weight="600">x_t</text>
-          <text x="172" y="303" font-family="Segoe UI" font-size="9" fill="var(--text-muted)" text-anchor="middle">текущее слово</text>
+          <text x="172" y="303" font-family="Segoe UI" font-size="9" fill="#a5d6ff" text-anchor="middle" opacity="0.5">текущее слово</text>
           <line x1="172" y1="282" x2="172" y2="256" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX2)"/>
 
           <!-- Concat point [h,x] -->
-          <circle cx="172" cy="240" r="10" fill="#1c1f2e" stroke="#c39bd3" stroke-width="1.2"/>
-          <text x="172" y="244" font-family="Segoe UI" font-size="8" fill="#c39bd3" text-anchor="middle">[h,x]</text>
+          <circle cx="172" cy="240" r="10" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.2" opacity="0.3"/>
+          <text x="172" y="244" font-family="Segoe UI" font-size="8" fill="#A855F7" text-anchor="middle" opacity="0.3">[h,x]</text>
           <!-- h → concat -->
-          <line x1="172" y1="183" x2="172" y2="228" stroke="#9b59b6" stroke-width="1.2"/>
+          <line x1="172" y1="183" x2="172" y2="228" stroke="#A855F7" stroke-width="1.2" opacity="0.3"/>
 
           <!-- ── Forget gate σ ── -->
-          <line x1="182" y1="240" x2="218" y2="140" stroke="#c39bd3" stroke-width="1" marker-end="url(#arrG)"/>
-          <rect x="208" y="126" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#e74c3c" stroke-width="1.3"/>
-          <text x="226" y="140" font-family="Segoe UI" font-size="11" fill="#e74c3c" text-anchor="middle">σ</text>
-          <text x="254" y="140" font-family="Segoe UI" font-size="8" fill="#e74c3c">f_t</text>
+          <line x1="182" y1="240" x2="218" y2="140" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
+          <rect x="208" y="126" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
+          <text x="226" y="140" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.3">σ</text>
+          <text x="254" y="140" font-family="Segoe UI" font-size="8" fill="#A855F7" opacity="0.3">f_t</text>
           <!-- f_t → × f node -->
-          <line x1="226" y1="126" x2="220" y2="96" stroke="#e74c3c" stroke-width="1" marker-end="url(#arrC)"/>
+          <line x1="226" y1="126" x2="220" y2="96" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
 
           <!-- ── Input gate σ ── -->
-          <line x1="182" y1="240" x2="310" y2="140" stroke="#c39bd3" stroke-width="1" marker-end="url(#arrG)"/>
-          <rect x="300" y="126" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#2ecc71" stroke-width="1.3"/>
-          <text x="318" y="140" font-family="Segoe UI" font-size="11" fill="#2ecc71" text-anchor="middle">σ</text>
-          <text x="346" y="140" font-family="Segoe UI" font-size="8" fill="#2ecc71">i_t</text>
+          <line x1="182" y1="240" x2="310" y2="140" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
+          <rect x="300" y="126" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
+          <text x="318" y="140" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.3">σ</text>
+          <text x="346" y="140" font-family="Segoe UI" font-size="8" fill="#A855F7" opacity="0.3">i_t</text>
 
           <!-- ── Candidate tanh ── -->
-          <line x1="182" y1="240" x2="310" y2="174" stroke="#c39bd3" stroke-width="1" marker-end="url(#arrG)"/>
-          <rect x="300" y="160" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#f39c12" stroke-width="1.3"/>
-          <text x="318" y="174" font-family="Segoe UI" font-size="10" fill="#f39c12" text-anchor="middle">tanh</text>
+          <line x1="182" y1="240" x2="310" y2="174" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
+          <rect x="300" y="160" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
+          <text x="318" y="174" font-family="Segoe UI" font-size="10" fill="#A855F7" text-anchor="middle" opacity="0.3">tanh</text>
 
           <!-- i_t × C̃_t multiply node -->
-          <circle cx="360" cy="150" r="12" fill="#1c1f2e" stroke="#2ecc71" stroke-width="1.3"/>
-          <text x="360" y="155" font-family="Segoe UI" font-size="14" fill="#2ecc71" text-anchor="middle">×</text>
-          <text x="360" y="130" font-family="Segoe UI" font-size="9" fill="#2ecc71" text-anchor="middle">записать</text>
+          <circle cx="360" cy="150" r="12" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
+          <text x="360" y="155" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle" opacity="0.3">×</text>
+          <text x="360" y="130" font-family="Segoe UI" font-size="9" fill="#A855F7" text-anchor="middle" opacity="0.3">записать</text>
           <!-- i_t → × -->
-          <line x1="336" y1="136" x2="350" y2="142" stroke="#2ecc71" stroke-width="1"/>
+          <line x1="336" y1="136" x2="350" y2="142" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
           <!-- C̃ → × -->
-          <line x1="336" y1="170" x2="350" y2="158" stroke="#f39c12" stroke-width="1"/>
-          <text x="380" y="166" font-family="Segoe UI" font-size="8" fill="#f39c12">C̃_t</text>
+          <line x1="336" y1="170" x2="350" y2="158" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
+          <text x="380" y="166" font-family="Segoe UI" font-size="8" fill="#A855F7" opacity="0.3">C̃_t</text>
 
           <!-- × input → ⊕ (up to add node) -->
-          <line x1="360" y1="138" x2="360" y2="96" stroke="#2ecc71" stroke-width="1.2" marker-end="url(#arrC)"/>
+          <line x1="360" y1="138" x2="360" y2="96" stroke="#A855F7" stroke-width="1.2" opacity="0.3"/>
 
           <!-- ── Output gate σ ── -->
-          <line x1="182" y1="240" x2="470" y2="200" stroke="#c39bd3" stroke-width="1" marker-end="url(#arrG)"/>
-          <rect x="460" y="186" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#3498db" stroke-width="1.3"/>
-          <text x="478" y="200" font-family="Segoe UI" font-size="11" fill="#3498db" text-anchor="middle">σ</text>
-          <text x="506" y="200" font-family="Segoe UI" font-size="8" fill="#3498db">o_t</text>
+          <line x1="182" y1="240" x2="470" y2="200" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
+          <rect x="460" y="186" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
+          <text x="478" y="200" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.3">σ</text>
+          <text x="506" y="200" font-family="Segoe UI" font-size="8" fill="#A855F7" opacity="0.3">o_t</text>
 
           <!-- ══════ OUTPUT PATH: C_t → tanh → × o_t → h_t ══════ -->
 
           <!-- tanh of C_t -->
-          <rect x="516" y="180" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#f1948a" stroke-width="1.2"/>
-          <text x="534" y="194" font-family="Segoe UI" font-size="10" fill="#f1948a" text-anchor="middle">tanh</text>
+          <rect x="516" y="180" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.2" opacity="0.3"/>
+          <text x="534" y="194" font-family="Segoe UI" font-size="10" fill="#A855F7" text-anchor="middle" opacity="0.3">tanh</text>
 
           <!-- × o_t node -->
-          <circle cx="580" cy="190" r="12" fill="#1c1f2e" stroke="#3498db" stroke-width="1.3"/>
-          <text x="580" y="195" font-family="Segoe UI" font-size="14" fill="#3498db" text-anchor="middle">×</text>
-          <text x="580" y="176" font-family="Segoe UI" font-size="9" fill="#3498db" text-anchor="middle">выдать</text>
+          <circle cx="580" cy="190" r="12" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
+          <text x="580" y="195" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle" opacity="0.3">×</text>
+          <text x="580" y="176" font-family="Segoe UI" font-size="9" fill="#A855F7" text-anchor="middle" opacity="0.3">выдать</text>
           <!-- tanh → × o_t -->
-          <line x1="552" y1="190" x2="566" y2="190" stroke="#f1948a" stroke-width="1.2"/>
+          <line x1="552" y1="190" x2="566" y2="190" stroke="#A855F7" stroke-width="1.2" opacity="0.3"/>
           <!-- o_t → × o_t (routed below tanh box) -->
-          <polyline points="496,196 506,212 556,212 568,190" fill="none" stroke="#3498db" stroke-width="1"/>
+          <polyline points="496,196 506,212 556,212 568,190" fill="none" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
 
-          <!-- × o_t → h_t (exits right) -->
-          <line x1="592" y1="190" x2="604" y2="190" stroke="#9b59b6" stroke-width="1.8"/>
+          <!-- × o_t → h_t (exits right, OUTPUT — green) -->
+          <line x1="592" y1="190" x2="604" y2="190" stroke="#3fb950" stroke-width="1.8" opacity="0.4"/>
           <!-- h_t branch point -->
-          <circle cx="608" cy="190" r="3" fill="#9b59b6"/>
+          <circle cx="608" cy="190" r="3" fill="#3fb950"/>
           <!-- h_t → right (next step) -->
-          <line x1="608" y1="190" x2="680" y2="190" stroke="#9b59b6" stroke-width="1.8" marker-end="url(#arrHL)" class="anim"/>
-          <text x="656" y="208" font-family="Segoe UI" font-size="12" fill="#9b59b6" text-anchor="middle" font-weight="600">h_t</text>
+          <line x1="608" y1="190" x2="680" y2="190" stroke="#3fb950" stroke-width="1.8" marker-end="url(#arrOut2)" class="anim"/>
+          <text x="656" y="208" font-family="Segoe UI" font-size="12" fill="#3fb950" text-anchor="middle" font-weight="600">h_t</text>
 
           <!-- h_t → y(next) upward -->
           <line x1="608" y1="186" x2="608" y2="22" stroke="#3fb950" stroke-width="1.5" marker-end="url(#arrOut2)"/>
-          <text x="620" y="60" font-family="Segoe UI" font-size="10" fill="var(--text-muted)">W_out</text>
+          <text x="620" y="60" font-family="Segoe UI" font-size="10" fill="#A855F7" opacity="0.3">W_out</text>
           <rect x="576" y="4" width="64" height="20" rx="4" fill="var(--bg-hover)" stroke="#3fb950" stroke-width="1"/>
           <text x="608" y="18" font-family="Segoe UI" font-size="11" fill="#3fb950" text-anchor="middle">y (next)</text>
 
           <!-- ── Formulas ── -->
-          <text x="360" y="272" font-family="Segoe UI" font-size="11" fill="var(--text-muted)" text-anchor="middle">C_t = f_t · C_{t-1} + i_t · tanh(W_c·[h_{t-1}, x_t])</text>
-          <text x="360" y="290" font-family="Segoe UI" font-size="11" fill="var(--text-muted)" text-anchor="middle">h_t = o_t · tanh(C_t)</text>
+          <text x="360" y="272" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.25">C_t = f_t · C_{t-1} + i_t · tanh(W_c·[h_{t-1}, x_t])</text>
+          <text x="360" y="290" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.25">h_t = o_t · tanh(C_t)</text>
         </svg>
       </div>
     </div>

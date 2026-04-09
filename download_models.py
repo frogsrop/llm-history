@@ -5,7 +5,7 @@ Run once before first launch:
   python download_models.py
 
 Downloads:
-  1. ruGPT-3 XL (~5GB) from HuggingFace: ai-forever/rugpt3xl
+  1. Qwen2.5-3B (~6GB) from HuggingFace: Qwen/Qwen2.5-3B
   2. fastText Russian model cc.ru.300.bin.gz (~2.6GB)
 
 Models are cached in the models/ directory next to this script.
@@ -17,7 +17,7 @@ from pathlib import Path
 MODELS_DIR = Path(__file__).parent / "models"
 MODELS_DIR.mkdir(exist_ok=True)
 
-RUGPT3_MODEL_ID = "ai-forever/rugpt3xl"
+QWEN_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct-AWQ"
 FASTTEXT_RU_URL = "https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.ru.300.bin.gz"
 FASTTEXT_RU_GZ  = MODELS_DIR / "cc.ru.300.bin.gz"
 FASTTEXT_RU_BIN = MODELS_DIR / "cc.ru.300.bin"
@@ -32,11 +32,11 @@ FASTTEXT_GZ  = FASTTEXT_EN_GZ
 FASTTEXT_BIN = FASTTEXT_EN_BIN
 
 
-def download_rugpt3():
-    """Downloads ruGPT-3 XL via HuggingFace transformers."""
+def download_qwen():
+    """Downloads Qwen2.5-7B-AWQ via HuggingFace transformers."""
     print("=" * 60)
-    print(f"Downloading ruGPT-3 XL ({RUGPT3_MODEL_ID}) ...")
-    print("Size: ~5 GB. This may take several minutes.")
+    print(f"Downloading Qwen2.5-7B-AWQ ({QWEN_MODEL_ID}) ...")
+    print("Size: ~4.5 GB. This may take several minutes.")
     print("=" * 60)
 
     try:
@@ -45,28 +45,30 @@ def download_rugpt3():
         print("ERROR: install transformers: pip install transformers")
         sys.exit(1)
 
-    cache_dir = str(MODELS_DIR / "rugpt3xl")
+    import torch
+
+    cache_dir = str(MODELS_DIR / "qwen2.5-7b-awq")
 
     tokenizer = AutoTokenizer.from_pretrained(
-        RUGPT3_MODEL_ID,
+        QWEN_MODEL_ID,
         cache_dir=cache_dir,
     )
     print("Tokenizer loaded.")
 
     model = AutoModelForCausalLM.from_pretrained(
-        RUGPT3_MODEL_ID,
+        QWEN_MODEL_ID,
         cache_dir=cache_dir,
+        torch_dtype=torch.float16,
     )
     print("Model loaded.")
 
     # Quick smoke test
-    import torch
-    inputs = tokenizer("Hello,", return_tensors="pt")
+    inputs = tokenizer("Кот сидел", return_tensors="pt")
     with torch.no_grad():
         out = model.generate(**inputs, max_new_tokens=5, do_sample=False)
     decoded = tokenizer.decode(out[0], skip_special_tokens=True)
     print(f"Generation test: '{decoded}'")
-    print("ruGPT-3 XL — OK\n")
+    print("Qwen2.5-7B-AWQ — OK\n")
 
 
 def download_fasttext():
@@ -124,16 +126,16 @@ def _verify_fasttext():
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Download models for LLM Explainer")
-    parser.add_argument("--rugpt3-only", action="store_true", help="Download ruGPT-3 XL only")
+    parser.add_argument("--qwen-only", action="store_true", help="Download Qwen2.5-3B only")
     parser.add_argument("--fasttext-only", action="store_true", help="Download fastText only")
     args = parser.parse_args()
 
-    if args.rugpt3_only:
-        download_rugpt3()
+    if args.qwen_only:
+        download_qwen()
     elif args.fasttext_only:
         download_fasttext()
     else:
-        download_rugpt3()
+        download_qwen()
         download_fasttext()
 
     print("All models downloaded. Run: uvicorn main:app --reload")

@@ -8,7 +8,7 @@ from pathlib import Path
 from routers import ngram
 from routers import rnn
 from routers import embeddings
-# from routers import llm_era
+from routers import llm_era
 
 app = FastAPI(title="LLM Evolution Explainer")
 
@@ -17,6 +17,7 @@ app = FastAPI(title="LLM Evolution Explainer")
 async def startup_event():
     rnn.start_pretraining()
     embeddings.start_loading()
+    llm_era.start_loading()
 
 
 BASE_DIR = Path(__file__).parent
@@ -27,7 +28,7 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.include_router(ngram.router, prefix="/api/ngram", tags=["ngram"])
 app.include_router(rnn.router, prefix="/api/rnn", tags=["rnn"])
 app.include_router(embeddings.router, prefix="/api/embeddings", tags=["embeddings"])
-# app.include_router(llm_era.router, prefix="/api/llm-era", tags=["llm-era"])
+app.include_router(llm_era.router, prefix="/api/llm-era", tags=["llm-era"])
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -38,6 +39,11 @@ async def index(request: Request):
 @app.get("/module/1", response_class=HTMLResponse)
 async def module_ngram(request: Request):
     return templates.TemplateResponse("module-1-ngram.html", {"request": request})
+
+
+@app.get("/module/1b", response_class=HTMLResponse)
+async def module_training(request: Request):
+    return templates.TemplateResponse("module-1b-training.html", {"request": request})
 
 
 @app.get("/module/2", response_class=HTMLResponse)

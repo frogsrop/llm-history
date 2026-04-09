@@ -5,7 +5,7 @@ Starts FastAPI via uvicorn subprocess on port 8000,
 provides an httpx client and a Playwright browser.
 
 Requirements:
-  conda activate llm-explainer
+  uv sync
   playwright install chromium
 """
 
@@ -85,6 +85,27 @@ def server():
         print(f"[conftest] Embeddings model ready after {int(time.time() - (emb_deadline - EMB_TIMEOUT))}s", flush=True)
     else:
         print(f"[conftest] WARNING: Embeddings model NOT ready after {EMB_TIMEOUT}s — embeddings tests will fail", flush=True)
+
+    # Wait for LLM-era model to be ready (Qwen2.5-3B, can take a while on first load)
+    LLM_TIMEOUT = 600
+    llm_deadline = time.time() + LLM_TIMEOUT
+    print(f"\n[conftest] Waiting for LLM-era model (up to {LLM_TIMEOUT}s)...", flush=True)
+    llm_ready = False
+    while time.time() < llm_deadline:
+        try:
+            r = httpx.get(f"{SERVER_URL}/api/llm-era/status", timeout=2)
+            data = r.json()
+            if r.status_code == 200 and data.get("ready") and data.get("seq2seq_ready"):
+                llm_ready = True
+                break
+        except Exception:
+            pass
+        time.sleep(3)
+
+    if llm_ready:
+        print(f"[conftest] LLM-era model ready after {int(time.time() - (llm_deadline - LLM_TIMEOUT))}s", flush=True)
+    else:
+        print(f"[conftest] WARNING: LLM-era model NOT ready after {LLM_TIMEOUT}s — LLM tests will fail", flush=True)
 
     yield SERVER_URL
 

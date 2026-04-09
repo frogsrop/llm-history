@@ -52,7 +52,7 @@ def build_table(tokens: List[str], n: int) -> Dict[str, Dict[str, float]]:
     return table
 
 
-def generate_words(tokens: List[str], order: int, start: str, n_words: int) -> List[str]:
+def generate_words(tokens: List[str], order: int, start: str, n_words: int, greedy: bool = False) -> List[str]:
     """Generates up to n_words words; stops early at EOS."""
     table = build_table(tokens, order)
     result = []
@@ -65,7 +65,10 @@ def generate_words(tokens: List[str], order: int, start: str, n_words: int) -> L
         words_pool = list(dist.keys())
         weights = list(dist.values())
         for _ in range(n_words):
-            w = random.choices(words_pool, weights=weights, k=1)[0]
+            if greedy:
+                w = max(zip(words_pool, weights), key=lambda x: x[1])[0]
+            else:
+                w = random.choices(words_pool, weights=weights, k=1)[0]
             result.append(w)
             if w == EOS:
                 break
@@ -79,9 +82,12 @@ def generate_words(tokens: List[str], order: int, start: str, n_words: int) -> L
         if not nexts:
             next_word = random.choice(regular) if regular else BOS
         else:
-            next_word = random.choices(
-                list(nexts.keys()), weights=list(nexts.values()), k=1
-            )[0]
+            if greedy:
+                next_word = max(nexts, key=nexts.get)
+            else:
+                next_word = random.choices(
+                    list(nexts.keys()), weights=list(nexts.values()), k=1
+                )[0]
         result.append(next_word)
         context_words.append(next_word)
         context = " ".join(context_words[-(order - 1):])
@@ -105,8 +111,9 @@ def ngram_generate(
     start: str = Query("кот"),
     words: int = Query(5, ge=1, le=20),
     seed: int = Query(42),
+    greedy: bool = Query(False),
 ):
-    """Generates a continuation from the start word. seed=-1 → random."""
+    """Generates a continuation from the start word. seed=-1 → random, greedy=true → always pick most probable."""
     if seed == -1:
         random.seed(None)
     else:
@@ -121,10 +128,11 @@ def ngram_generate(
     else:
         fallback = False
 
-    generated = generate_words(tokens, order, start, words)
+    generated = generate_words(tokens, order, start, words, greedy=greedy)
     return {
         "start": start,
         "words": generated,
         "order": order,
         "fallback_used": fallback,
+        "greedy": greedy,
     }

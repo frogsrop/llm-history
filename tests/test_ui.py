@@ -304,11 +304,50 @@ def test_embeddings_example_buttons(page, server):
     btns = page.locator(".example-btn")
     assert btns.count() >= 2, f"Expected at least 2 example buttons, found {btns.count()}"
 
-# === Step 7: LLM ===
-# def test_llm_toggle_attention(page, server):
-#     page.goto(server + "/module/4")
-#     toggle = page.locator("input[type='checkbox'][name='attention']")
-#     toggle.check()
-#     page.wait_for_timeout(2000)
-#     heatmap = page.locator("canvas")
-#     assert heatmap.count() > 0
+# === Step 7: LLM Era ===
+def test_llm_page_loads(page, server):
+    page.goto(server + "/module/4")
+    page.wait_for_load_state("networkidle")
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    assert errors == [], f"JS errors: {errors}"
+
+def test_llm_seq2seq_visible(page, server):
+    """Seq2Seq SVG diagram is always visible."""
+    page.goto(server + "/module/4")
+    page.wait_for_load_state("networkidle")
+    svg = page.locator("#seq2seq-diagram")
+    assert svg.count() == 1, "Seq2Seq diagram not found"
+    assert svg.is_visible()
+
+def test_llm_attention_toggle(page, server):
+    """Attention toggle reveals the heatmap section."""
+    page.goto(server + "/module/4")
+    page.wait_for_load_state("networkidle")
+    page.locator("#toggle-attention").click()
+    page.wait_for_timeout(500)
+    section = page.locator("#attention-section")
+    assert section.is_visible(), "Attention section did not appear"
+
+def test_llm_scale_toggle(page, server):
+    """Scale toggle reveals the generation section."""
+    page.goto(server + "/module/4")
+    page.wait_for_load_state("networkidle")
+    # Must enable attention first (cumulative)
+    page.locator("#toggle-attention").click()
+    page.wait_for_timeout(300)
+    page.locator("#toggle-scale").click()
+    page.wait_for_timeout(500)
+    section = page.locator("#scale-section")
+    assert section.is_visible(), "Scale/generation section did not appear"
+
+def test_llm_reset_button(page, server):
+    """Reset button hides all toggled sections."""
+    page.goto(server + "/module/4")
+    page.wait_for_load_state("networkidle")
+    page.locator("#toggle-attention").click()
+    page.wait_for_timeout(300)
+    page.locator("#reset-toggles").click()
+    page.wait_for_timeout(300)
+    section = page.locator("#attention-section")
+    assert not section.is_visible(), "Attention section should be hidden after reset"

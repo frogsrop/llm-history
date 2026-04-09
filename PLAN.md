@@ -40,7 +40,7 @@
 research/
   ├── PLAN.md                        ← этот файл
   ├── main.py                        ← FastAPI приложение, роуты
-  ├── environment.yml                ← conda-окружение
+  ├── pyproject.toml                 ← зависимости проекта (uv)
   ├── download_models.py             ← однократная загрузка ruGPT-3 XL + fastText cc.ru.300.bin
   ├── corpus.py                      ← корпус из 10 предложений (единый источник, читает data/corpus.txt)
   ├── routers/
@@ -110,8 +110,8 @@ research/
 ## Шаги исполнения
 
 ### Шаг 1 — Скелет приложения
-- [x] `environment.yml`: conda-окружение, python=3.11, зависимости — fastapi, uvicorn, gensim, numpy, scikit-learn, jinja2, transformers, torch, accelerate, playwright, pytest, httpx
-  - Запуск: `conda env create -f environment.yml && conda activate llm-explainer`
+- [x] `pyproject.toml`: зависимости проекта (uv) — fastapi, uvicorn, gensim, numpy, scikit-learn, jinja2, transformers, torch, accelerate, playwright, pytest, httpx
+  - Запуск: `uv sync`
 - [x] `main.py`: FastAPI app, раздача static + templates; импорты роутеров закомментированы — раскомментируются по мере реализации шагов 4–7
 - [x] `corpus.py`: читает `data/corpus.txt`, предоставляет SENTENCES / CORPUS / TOKENS
 - [x] `static/style.css`: тёмная тема, CSS-переменные, цветовое кодирование по эпохам
@@ -200,18 +200,18 @@ research/
 ### Шаг 7 — `module-4-llm-era.html` (LLM-эра: конструктор улучшений)
 Каждый тумблер **добавляет новый визуальный блок** — накопительный режим: тумблер можно только включить, выключить нельзя. Кнопка "Сбросить всё" возвращает страницу к базовому состоянию (только Seq2Seq).
 
-- [ ] Базовый уровень (всегда виден): **Seq2Seq**
+- [x] Базовый уровень (всегда виден): **Seq2Seq**
   - Анимация: токены корпуса → энкодер → один вектор (bottleneck) → декодер
   - Визуально видно что вся информация сжата в одну точку — проблема очевидна
-- [ ] Тумблер "Attention": появляется новый блок
-  - Реальная матрица весов внимания из ruGPT-3 XL на нашем корпусе
-  - `routers/llm_era.py`: `GET /api/llm-era/attention?sentence=...` → матрица весов: слой 24 из 48, усреднение по всем 16 головам → `[seq_len × seq_len]`
+- [x] Тумблер "Attention": появляется новый блок
+  - Реальная матрица весов внимания из ruGPT-3 large на нашем корпусе
+  - `routers/llm_era.py`: `GET /api/llm-era/attention?sentence=...` → матрица весов: слой 24 из 24, усреднение по всем 16 головам → `[seq_len × seq_len]`
   - Тепловая карта: видно какие слова "смотрят" друг на друга
-- [ ] Transformer: **рассказывается устно** — параллельность и multi-head, без визуального блока
-- [ ] Тумблер "Масштаб (LLM)": появляется новый блок
-  - Реальная генерация через ruGPT-3 XL (~5GB, ~10GB VRAM, HuggingFace: ai-forever/rugpt3xl)
+- [x] Transformer: **рассказывается устно** — параллельность и multi-head, без визуального блока
+- [x] Тумблер "Масштаб (LLM)": появляется новый блок
+  - Реальная генерация через ruGPT-3 large (~3GB, HuggingFace: ai-forever/rugpt3large_based_on_gpt2)
   - `POST /api/llm-era/generate` → продолжение корпуса от LLM
-  - Attention веса тоже берём из ruGPT-3 XL — одна модель для всего
+  - Attention веса тоже берём из ruGPT-3 large — одна модель для всего
   - Шкала параметров: 117M → 1.3B → 175B → ~1T — визуальное ощущение разницы
   - Слайдер температуры: debounce 1 сек → запрос генерации после паузы
 
