@@ -6,7 +6,7 @@ scikit-learn==1.5.2
 jinja2==3.1.4
 transformers==4.44.2
 accelerate==0.34.2
-autoawq
+bitsandbytes>=0.43
 python-multipart==0.0.9
 
 # PyTorch nightly with CUDA 12.8 (required for RTX 5080 / Blackwell)

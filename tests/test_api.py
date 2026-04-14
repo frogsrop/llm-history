@@ -228,7 +228,7 @@ def test_llm_attention(client):
     n = len(data["tokens"])
     assert len(data["weights"]) == n
     assert len(data["weights"][0]) == n
-    assert data["model"] == "Qwen2.5-3B"
+    assert data["model"] == "YandexGPT-5-Lite-8B"
     assert data["causal"] is True
     assert data["total_heads"] > 0
     assert data["total_layers"] > 0

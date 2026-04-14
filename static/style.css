@@ -17,6 +17,7 @@
   --accent:      #58a6ff;
 
   --epoch-ngram:       #4A9EFF;
+  --epoch-neuron:      #34D399;
   --epoch-rnn:         #A855F7;
   --epoch-embeddings:  #FACC15;
   --epoch-llm:         #F87171;
@@ -75,7 +76,7 @@ body {
   margin-left: var(--sidebar-width);
   flex: 1;
   min-height: 100vh;
-  padding: 40px 48px;
+  padding: 40px 48px 64px;
   max-width: 960px;
 }
 
@@ -128,6 +129,7 @@ body {
 
 /* Epoch colours for nav dots */
 .nav-item[data-epoch="ngram"]      .nav-dot.active { background: var(--epoch-ngram); }
+.nav-item[data-epoch="neuron"]     .nav-dot.active { background: var(--epoch-neuron); }
 .nav-item[data-epoch="rnn"]        .nav-dot.active { background: var(--epoch-rnn); }
 .nav-item[data-epoch="embeddings"] .nav-dot.active { background: var(--epoch-embeddings); }
 .nav-item[data-epoch="llm"]        .nav-dot.active { background: var(--epoch-llm); }
@@ -230,6 +232,7 @@ body {
   vertical-align: middle;
 }
 .epoch-ngram      { background: var(--epoch-ngram); }
+.epoch-neuron     { background: var(--epoch-neuron); }
 .epoch-rnn        { background: var(--epoch-rnn); }
 .epoch-embeddings { background: var(--epoch-embeddings); }
 .epoch-llm        { background: var(--epoch-llm); }

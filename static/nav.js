@@ -9,11 +9,11 @@
 const MODULES = [
   { path: "/",         label: "Home",            epoch: null },
   { path: "/module/1", label: "N-gram",          epoch: "ngram" },
+  { path: "/module/1c", label: "Нейрон",         epoch: "neuron" },
   { path: "/module/1b", label: "Обучение",       epoch: null },
-  { path: "/module/2", label: "RNN / LSTM",      epoch: "rnn" },
-  { path: "/module/3", label: "Embeddings",      epoch: "embeddings" },
+  { path: "/module/2", label: "Embeddings",      epoch: "embeddings" },
+  { path: "/module/3", label: "RNN",              epoch: "rnn" },
   { path: "/module/4", label: "LLM Era",         epoch: "llm" },
-  { path: "/module/5", label: "Comparison",      epoch: null },
 ];
 
 const STORAGE_KEY = "llm_explainer_visited";

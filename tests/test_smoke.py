@@ -8,6 +8,7 @@ import pytest
 PAGES = [
     ("/", 200),
     ("/module/1", 200),
+    ("/module/1c", 200),
     ("/module/2", 200),
     ("/module/3", 200),
     ("/module/4", 200),

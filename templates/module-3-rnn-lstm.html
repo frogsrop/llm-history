@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>RNN / LSTM — LLM Evolution</title>
+  <title>RNN — LLM Evolution</title>
   <link rel="stylesheet" href="/static/style.css">
   <style>
     .mode-toggle { display:flex; gap:8px; margin-bottom:20px; }
@@ -14,15 +14,10 @@
     .mode-btn.active { background:var(--epoch-rnn); border-color:var(--epoch-rnn); color:#0d1117; }
     .rnn-svg-wrap { overflow-x:auto; margin:8px 0 4px; }
     .rnn-cell { fill:#1c1f2e; stroke:var(--epoch-rnn); stroke-width:1.5; }
-    .rnn-cell-lstm { fill:#1c1f2e; stroke:#9b59b6; stroke-width:1.5; }
     .node-label { font-family:"Segoe UI",sans-serif; font-size:11px; fill:var(--epoch-rnn); font-weight:600; }
-    .node-label-lstm { font-family:"Segoe UI",sans-serif; font-size:11px; fill:#c39bd3; font-weight:600; }
     .token-label { font-family:"Segoe UI",sans-serif; font-size:12px; fill:#a5d6ff; }
     .arr { fill:none; stroke:#30363d; stroke-width:1.5; marker-end:url(#arr); }
     .arr-h { fill:none; stroke:var(--epoch-rnn); stroke-width:1.8; marker-end:url(#arrH); }
-    .arr-hl { fill:none; stroke:#9b59b6; stroke-width:1.8; marker-end:url(#arrHL); }
-    .arr-c { fill:none; stroke:#f1948a; stroke-width:1.5; stroke-dasharray:4,3; marker-end:url(#arrC); }
-    .gate-label { font-family:"Segoe UI",sans-serif; font-size:10px; fill:#c39bd3; }
     @keyframes fp { 0%,100%{stroke-opacity:.3} 50%{stroke-opacity:1} }
     .anim { animation:fp 1.2s ease-in-out infinite; }
     .gen-token { display:inline-block; padding:2px 8px; border-radius:4px; margin:2px 3px; font-size:15px; transition:background .25s,color .25s; }
@@ -35,24 +30,13 @@
     .word-input { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); padding:8px 12px; font-size:14px; width:160px; outline:none; transition:border-color .2s; }
     .word-input:focus { border-color:var(--epoch-rnn); }
     .controls-row { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
-    .cmp th { text-align:center; }
-    .cmp td { text-align:center; font-size:13px; }
-    .cmp td:first-child { text-align:left; font-weight:600; }
-    .tg { color:#3fb950; font-weight:600; }
-    .tb { color:var(--epoch-llm); }
-    .tm { color:var(--epoch-embeddings); }
   </style>
 </head>
 <body>
   <nav id="sidebar"></nav>
   <main id="main-content">
-    <h1 class="section-title"><span class="epoch-bar epoch-rnn"></span>RNN / LSTM</h1>
+    <h1 class="section-title"><span class="epoch-bar epoch-rnn"></span>RNN</h1>
     <p class="section-sub">1986–2015 — нейронная сеть с памятью о прошлом</p>
-
-    <div class="mode-toggle">
-      <button class="mode-btn active" id="btn-rnn">RNN</button>
-      <button class="mode-btn" id="btn-lstm">LSTM</button>
-    </div>
 
     <!-- Architecture diagram -->
     <div class="card">
@@ -116,151 +100,7 @@
 
         </svg>
       </div>
-      <!-- LSTM SVG — expanded single-cell internals -->
-      <div class="rnn-svg-wrap" id="svg-lstm" style="display:none">
-        <svg class="diagram-svg" viewBox="0 0 720 310" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <marker id="arrHL" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
-            <marker id="arrC"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
-            <marker id="arrG"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
-            <marker id="arrOut2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#3fb950"/></marker>
-            <marker id="arrX2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#a5d6ff"/></marker>
-          </defs>
 
-          <!-- ── LEGEND ── -->
-          <line x1="16" y1="16" x2="46" y2="16" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX2)"/>
-          <text x="52" y="20" font-family="Segoe UI" font-size="10" fill="#a5d6ff">вход (input)</text>
-          <line x1="16" y1="32" x2="46" y2="32" stroke="#3fb950" stroke-width="1.8" marker-end="url(#arrOut2)"/>
-          <text x="52" y="36" font-family="Segoe UI" font-size="10" fill="#3fb950">выход (output)</text>
-
-          <!-- ── CELL BOX ── -->
-          <rect x="160" y="52" width="400" height="200" rx="10" class="rnn-cell-lstm"/>
-
-          <!-- ══════ CELL STATE LANE (top, dashed) ══════ -->
-
-          <!-- C_{t-1} input (blue) -->
-          <text x="44" y="82" font-family="Segoe UI" font-size="12" fill="#a5d6ff" text-anchor="middle" font-weight="600">C_{t-1}</text>
-          <text x="44" y="95" font-family="Segoe UI" font-size="9" fill="#a5d6ff" text-anchor="middle" opacity="0.5">долгая</text>
-          <text x="44" y="105" font-family="Segoe UI" font-size="9" fill="#a5d6ff" text-anchor="middle" opacity="0.5">память</text>
-          <line x1="80" y1="82" x2="208" y2="82" stroke="#a5d6ff" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrX2)" class="anim"/>
-
-          <!-- × f_t (forget multiply) -->
-          <circle cx="220" cy="82" r="14" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5" opacity="0.3"/>
-          <text x="220" y="87" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle" opacity="0.3">×</text>
-          <text x="220" y="68" font-family="Segoe UI" font-size="9" fill="#A855F7" text-anchor="middle" opacity="0.3">забыть</text>
-
-          <!-- × f_t → ⊕ -->
-          <line x1="234" y1="82" x2="348" y2="82" stroke="#A855F7" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.3"/>
-
-          <!-- ⊕ (add node) -->
-          <circle cx="360" cy="82" r="14" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5" opacity="0.3"/>
-          <text x="360" y="87" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle" opacity="0.3">⊕</text>
-
-          <!-- ⊕ → C_t output (green) -->
-          <line x1="374" y1="82" x2="530" y2="82" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="4,3" class="anim"/>
-          <!-- C_t branch point -->
-          <circle cx="532" cy="82" r="3" fill="#3fb950"/>
-          <!-- C_t → right (next step) -->
-          <line x1="532" y1="82" x2="680" y2="82" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrOut2)" class="anim"/>
-          <text x="648" y="74" font-family="Segoe UI" font-size="12" fill="#3fb950" text-anchor="middle" font-weight="600">C_t</text>
-
-          <!-- C_t → tanh (down to output section) -->
-          <line x1="532" y1="82" x2="532" y2="180" stroke="#A855F7" stroke-width="1.2" stroke-dasharray="3,2" opacity="0.3"/>
-
-          <!-- ══════ GATES (middle section) ══════ -->
-
-          <!-- h_{t-1} input (blue) -->
-          <text x="44" y="178" font-family="Segoe UI" font-size="12" fill="#a5d6ff" text-anchor="middle" font-weight="600">h_{t-1}</text>
-          <text x="44" y="191" font-family="Segoe UI" font-size="9" fill="#a5d6ff" text-anchor="middle" opacity="0.5">рабочая</text>
-          <text x="44" y="201" font-family="Segoe UI" font-size="9" fill="#a5d6ff" text-anchor="middle" opacity="0.5">память</text>
-          <line x1="80" y1="180" x2="168" y2="180" stroke="#a5d6ff" stroke-width="1.8" marker-end="url(#arrX2)"/>
-
-          <!-- h_{t-1} branch point -->
-          <circle cx="172" cy="180" r="3" fill="#a5d6ff"/>
-
-          <!-- x_t input from below (blue) -->
-          <text x="172" y="290" font-family="Segoe UI" font-size="12" fill="#a5d6ff" text-anchor="middle" font-weight="600">x_t</text>
-          <text x="172" y="303" font-family="Segoe UI" font-size="9" fill="#a5d6ff" text-anchor="middle" opacity="0.5">текущее слово</text>
-          <line x1="172" y1="282" x2="172" y2="256" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrX2)"/>
-
-          <!-- Concat point [h,x] -->
-          <circle cx="172" cy="240" r="10" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.2" opacity="0.3"/>
-          <text x="172" y="244" font-family="Segoe UI" font-size="8" fill="#A855F7" text-anchor="middle" opacity="0.3">[h,x]</text>
-          <!-- h → concat -->
-          <line x1="172" y1="183" x2="172" y2="228" stroke="#A855F7" stroke-width="1.2" opacity="0.3"/>
-
-          <!-- ── Forget gate σ ── -->
-          <line x1="182" y1="240" x2="218" y2="140" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
-          <rect x="208" y="126" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
-          <text x="226" y="140" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.3">σ</text>
-          <text x="254" y="140" font-family="Segoe UI" font-size="8" fill="#A855F7" opacity="0.3">f_t</text>
-          <!-- f_t → × f node -->
-          <line x1="226" y1="126" x2="220" y2="96" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
-
-          <!-- ── Input gate σ ── -->
-          <line x1="182" y1="240" x2="310" y2="140" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
-          <rect x="300" y="126" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
-          <text x="318" y="140" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.3">σ</text>
-          <text x="346" y="140" font-family="Segoe UI" font-size="8" fill="#A855F7" opacity="0.3">i_t</text>
-
-          <!-- ── Candidate tanh ── -->
-          <line x1="182" y1="240" x2="310" y2="174" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
-          <rect x="300" y="160" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
-          <text x="318" y="174" font-family="Segoe UI" font-size="10" fill="#A855F7" text-anchor="middle" opacity="0.3">tanh</text>
-
-          <!-- i_t × C̃_t multiply node -->
-          <circle cx="360" cy="150" r="12" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
-          <text x="360" y="155" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle" opacity="0.3">×</text>
-          <text x="360" y="130" font-family="Segoe UI" font-size="9" fill="#A855F7" text-anchor="middle" opacity="0.3">записать</text>
-          <!-- i_t → × -->
-          <line x1="336" y1="136" x2="350" y2="142" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
-          <!-- C̃ → × -->
-          <line x1="336" y1="170" x2="350" y2="158" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
-          <text x="380" y="166" font-family="Segoe UI" font-size="8" fill="#A855F7" opacity="0.3">C̃_t</text>
-
-          <!-- × input → ⊕ (up to add node) -->
-          <line x1="360" y1="138" x2="360" y2="96" stroke="#A855F7" stroke-width="1.2" opacity="0.3"/>
-
-          <!-- ── Output gate σ ── -->
-          <line x1="182" y1="240" x2="470" y2="200" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
-          <rect x="460" y="186" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
-          <text x="478" y="200" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.3">σ</text>
-          <text x="506" y="200" font-family="Segoe UI" font-size="8" fill="#A855F7" opacity="0.3">o_t</text>
-
-          <!-- ══════ OUTPUT PATH: C_t → tanh → × o_t → h_t ══════ -->
-
-          <!-- tanh of C_t -->
-          <rect x="516" y="180" width="36" height="20" rx="4" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.2" opacity="0.3"/>
-          <text x="534" y="194" font-family="Segoe UI" font-size="10" fill="#A855F7" text-anchor="middle" opacity="0.3">tanh</text>
-
-          <!-- × o_t node -->
-          <circle cx="580" cy="190" r="12" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.3" opacity="0.3"/>
-          <text x="580" y="195" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle" opacity="0.3">×</text>
-          <text x="580" y="176" font-family="Segoe UI" font-size="9" fill="#A855F7" text-anchor="middle" opacity="0.3">выдать</text>
-          <!-- tanh → × o_t -->
-          <line x1="552" y1="190" x2="566" y2="190" stroke="#A855F7" stroke-width="1.2" opacity="0.3"/>
-          <!-- o_t → × o_t (routed below tanh box) -->
-          <polyline points="496,196 506,212 556,212 568,190" fill="none" stroke="#A855F7" stroke-width="1" opacity="0.3"/>
-
-          <!-- × o_t → h_t (exits right, OUTPUT — green) -->
-          <line x1="592" y1="190" x2="604" y2="190" stroke="#3fb950" stroke-width="1.8" opacity="0.4"/>
-          <!-- h_t branch point -->
-          <circle cx="608" cy="190" r="3" fill="#3fb950"/>
-          <!-- h_t → right (next step) -->
-          <line x1="608" y1="190" x2="680" y2="190" stroke="#3fb950" stroke-width="1.8" marker-end="url(#arrOut2)" class="anim"/>
-          <text x="656" y="208" font-family="Segoe UI" font-size="12" fill="#3fb950" text-anchor="middle" font-weight="600">h_t</text>
-
-          <!-- h_t → y(next) upward -->
-          <line x1="608" y1="186" x2="608" y2="22" stroke="#3fb950" stroke-width="1.5" marker-end="url(#arrOut2)"/>
-          <text x="620" y="60" font-family="Segoe UI" font-size="10" fill="#A855F7" opacity="0.3">W_out</text>
-          <rect x="576" y="4" width="64" height="20" rx="4" fill="var(--bg-hover)" stroke="#3fb950" stroke-width="1"/>
-          <text x="608" y="18" font-family="Segoe UI" font-size="11" fill="#3fb950" text-anchor="middle">y (next)</text>
-
-          <!-- ── Formulas ── -->
-          <text x="360" y="272" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.25">C_t = f_t · C_{t-1} + i_t · tanh(W_c·[h_{t-1}, x_t])</text>
-          <text x="360" y="290" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.25">h_t = o_t · tanh(C_t)</text>
-        </svg>
-      </div>
     </div>
 
     <!-- Hidden size slider -->
@@ -318,42 +158,6 @@
       </div>
     </div>
 
-    <!-- RNN vs Transformer table -->
-    <div class="card">
-      <div class="card-title">RNN vs Transformer</div>
-      <table class="cmp">
-        <thead><tr>
-          <th>Аспект</th>
-          <th style="color:var(--epoch-rnn)">RNN / LSTM</th>
-          <th style="color:#58a6ff">Transformer</th>
-        </tr></thead>
-        <tbody>
-          <tr><td>Доступ к прошлому</td><td class="tm">Затухающий</td><td class="tg">Равный (Attention)</td></tr>
-          <tr><td>Параллелизм</td><td class="tb">Нет (последовательно)</td><td class="tg">Да (все токены сразу)</td></tr>
-          <tr><td>Длинные зависимости</td><td class="tm">Частично (LSTM)</td><td class="tg">Хорошо</td></tr>
-          <tr><td>Скорость обучения</td><td class="tb">Медленно</td><td class="tg">Быстро (GPU)</td></tr>
-          <tr><td>Параметров</td><td class="tg">Мало</td><td class="tb">Миллиарды</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- LSTM gate explanation (only in LSTM mode) -->
-    <div class="card" id="lstm-explain" style="display:none">
-      <div class="card-title">LSTM: ворота забывания
-        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">forget gate
-          <button class="hint-btn" data-hint="Forget gate — ‘вентиль’ который решает, что оставить в памяти, а что выбросить. Как человек, который решает что записать в блокнот, а что нет.">?</button>
-        </span>
-      </div>
-      <div class="callout" style="border-color:var(--epoch-rnn)">
-        LSTM добавляет <strong>cell state (c)</strong> — долгосрочную ленту памяти отдельно от hidden state.
-        Четыре вентиля управляют потоком:<br><br>
-        <strong>f</strong> (forget) — что забыть из прошлого<br>
-        <strong>i</strong> (input) — что записать из нового входа<br>
-        <strong>g</strong> (gate) — кандидаты для записи<br>
-        <strong>o</strong> (output) — что выдать наружу<br><br>
-        Благодаря прямому градиентному пути через c сеть лучше обучается на длинных последовательностях.
-      </div>
-    </div>
   </main>
 
   <script src="/static/nav.js"></script>
@@ -361,21 +165,7 @@
   <script src="/static/tooltip.js"></script>
   <script>
     const HIDDEN_SIZES = [4, 8, 16, 32];
-    let currentMode = "rnn";
-
-    document.getElementById("btn-rnn").addEventListener("click", () => setMode("rnn"));
-    document.getElementById("btn-lstm").addEventListener("click", () => setMode("lstm"));
-
-    function setMode(mode) {
-      currentMode = mode;
-      document.getElementById("btn-rnn").classList.toggle("active", mode === "rnn");
-      document.getElementById("btn-lstm").classList.toggle("active", mode === "lstm");
-      document.getElementById("svg-rnn").style.display = mode === "rnn" ? "" : "none";
-      document.getElementById("svg-lstm").style.display = mode === "lstm" ? "" : "none";
-      const titleEl = document.getElementById("diagram-title");
-      titleEl.childNodes[0].textContent = mode === "rnn" ? "Архитектура RNN" : "Архитектура LSTM";
-      document.getElementById("lstm-explain").style.display = mode === "lstm" ? "" : "none";
-    }
+    const currentMode = "rnn";
 
     const hiddenSlider = document.getElementById("hidden-size");
     const hiddenVal = document.getElementById("hidden-size-val");
@@ -578,9 +368,7 @@
       const words = parseInt(wordsSlider.value);
       const seed = typeof getSeed === "function" ? getSeed() : 42;
 
-      const endpoint = currentMode === "lstm"
-        ? `/api/rnn/lstm/generate?hidden_size=${hiddenSize}&start=${encodeURIComponent(start)}&words=${words}&seed=${seed}`
-        : `/api/rnn/generate?hidden_size=${hiddenSize}&start=${encodeURIComponent(start)}&words=${words}&seed=${seed}`;
+      const endpoint = `/api/rnn/generate?hidden_size=${hiddenSize}&start=${encodeURIComponent(start)}&words=${words}&seed=${seed}`;
 
       showLoading(resultEl);
       try {
@@ -605,12 +393,6 @@
         const dl = document.getElementById("corpus-words");
         dl.innerHTML = data.vocab.map(w => `<option value="${w}">`).join("");
 
-        // Update LSTM architecture SVG token labels with first 5 corpus words
-        const sample = data.sample;
-        for (let i = 0; i < 5; i++) {
-          const lstmEl = document.getElementById(`lstm-tok-${i}`);
-          if (lstmEl) lstmEl.textContent = sample[i] || "";
-        }
       } catch (e) {
         console.warn("vocab load failed:", e);
       }

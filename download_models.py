@@ -5,8 +5,8 @@ Run once before first launch:
   python download_models.py
 
 Downloads:
-  1. Qwen2.5-3B (~6GB) from HuggingFace: Qwen/Qwen2.5-3B
-  2. fastText Russian model cc.ru.300.bin.gz (~2.6GB)
+  1. YandexGPT-5-Lite-8B (~16GB fp16, loaded in 4-bit via bitsandbytes at runtime)
+  2. fastText model cc.ru.300.bin.gz (~2.6GB)
 
 Models are cached in the models/ directory next to this script.
 """
@@ -17,7 +17,7 @@ from pathlib import Path
 MODELS_DIR = Path(__file__).parent / "models"
 MODELS_DIR.mkdir(exist_ok=True)
 
-QWEN_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct-AWQ"
+YANDEX_MODEL_ID = "yandex/YandexGPT-5-Lite-8B-pretrain"
 FASTTEXT_RU_URL = "https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.ru.300.bin.gz"
 FASTTEXT_RU_GZ  = MODELS_DIR / "cc.ru.300.bin.gz"
 FASTTEXT_RU_BIN = MODELS_DIR / "cc.ru.300.bin"
@@ -27,16 +27,16 @@ FASTTEXT_EN_GZ  = MODELS_DIR / "cc.en.300.bin.gz"
 FASTTEXT_EN_BIN = MODELS_DIR / "cc.en.300.bin"
 
 # Active fastText model (used by embeddings router)
-FASTTEXT_URL = FASTTEXT_EN_URL
-FASTTEXT_GZ  = FASTTEXT_EN_GZ
-FASTTEXT_BIN = FASTTEXT_EN_BIN
+FASTTEXT_URL = FASTTEXT_RU_URL
+FASTTEXT_GZ  = FASTTEXT_RU_GZ
+FASTTEXT_BIN = FASTTEXT_RU_BIN
 
 
-def download_qwen():
-    """Downloads Qwen2.5-7B-AWQ via HuggingFace transformers."""
+def download_yandexgpt():
+    """Downloads YandexGPT-5-Lite-8B-pretrain via HuggingFace transformers."""
     print("=" * 60)
-    print(f"Downloading Qwen2.5-7B-AWQ ({QWEN_MODEL_ID}) ...")
-    print("Size: ~4.5 GB. This may take several minutes.")
+    print(f"Downloading YandexGPT-5-Lite-8B ({YANDEX_MODEL_ID}) ...")
+    print("Size: ~16 GB (fp16). At runtime, loaded in 4-bit (~4-5 GB VRAM).")
     print("=" * 60)
 
     try:
@@ -47,18 +47,18 @@ def download_qwen():
 
     import torch
 
-    cache_dir = str(MODELS_DIR / "qwen2.5-7b-awq")
+    cache_dir = str(MODELS_DIR / "yandexgpt-5-lite-8b")
 
     tokenizer = AutoTokenizer.from_pretrained(
-        QWEN_MODEL_ID,
+        YANDEX_MODEL_ID,
         cache_dir=cache_dir,
     )
     print("Tokenizer loaded.")
 
     model = AutoModelForCausalLM.from_pretrained(
-        QWEN_MODEL_ID,
+        YANDEX_MODEL_ID,
         cache_dir=cache_dir,
-        torch_dtype=torch.float16,
+        dtype=torch.float16,
     )
     print("Model loaded.")
 
@@ -68,7 +68,7 @@ def download_qwen():
         out = model.generate(**inputs, max_new_tokens=5, do_sample=False)
     decoded = tokenizer.decode(out[0], skip_special_tokens=True)
     print(f"Generation test: '{decoded}'")
-    print("Qwen2.5-7B-AWQ — OK\n")
+    print("YandexGPT-5-Lite-8B — OK\n")
 
 
 def download_fasttext():
@@ -126,16 +126,16 @@ def _verify_fasttext():
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Download models for LLM Explainer")
-    parser.add_argument("--qwen-only", action="store_true", help="Download Qwen2.5-3B only")
+    parser.add_argument("--yandex-only", action="store_true", help="Download YandexGPT-5-Lite-8B only")
     parser.add_argument("--fasttext-only", action="store_true", help="Download fastText only")
     args = parser.parse_args()
 
-    if args.qwen_only:
-        download_qwen()
+    if args.yandex_only:
+        download_yandexgpt()
     elif args.fasttext_only:
         download_fasttext()
     else:
-        download_qwen()
+        download_yandexgpt()
         download_fasttext()
 
     print("All models downloaded. Run: uvicorn main:app --reload")

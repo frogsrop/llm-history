@@ -37,34 +37,40 @@
 ## Файловая структура
 
 ```
-research/
-  ├── PLAN.md                        ← этот файл
-  ├── main.py                        ← FastAPI приложение, роуты
-  ├── pyproject.toml                 ← зависимости проекта (uv)
-  ├── download_models.py             ← однократная загрузка ruGPT-3 XL + fastText cc.ru.300.bin
-  ├── corpus.py                      ← корпус из 10 предложений (единый источник, читает data/corpus.txt)
-  ├── routers/
-  │   ├── ngram.py                   ← API для N-gram
-  │   ├── rnn.py                     ← API для RNN/LSTM симуляции
-  │   ├── embeddings.py              ← API для Word2Vec (fastText vectors)
-  │   └── llm_era.py                 ← API для LLM-эры
-  ├── static/
-  │   ├── style.css                  ← тёмная тема, цвета эпох, анимации
-  │   ├── nav.js                     ← sidebar с прогрессом, кнопки next/prev
-  │   ├── utils.js                   ← animateFlow(), общие JS-утилиты
-  │   └── tooltip.js                 ← универсальный компонент кнопки `?`
-  ├── templates/
-  │   ├── index.html                 ← главная + интерактивный timeline
-  │   ├── module-1-ngram.html        ← N-gram / Цепи Маркова
-  │   ├── module-2-rnn-lstm.html     ← RNN + LSTM
-  │   ├── module-3-embeddings.html   ← Word2Vec / Эмбеддинги
-  │   ├── module-4-llm-era.html      ← LLM-эра: конструктор улучшений
-  │   └── module-5-compare.html      ← Финальное сравнение
-  └── tests/
-      ├── conftest.py                ← фикстуры: FastAPI + Playwright
-      ├── test_smoke.py              ← базовые тесты: страницы открываются
-      ├── test_api.py                ← тесты API эндпоинтов (httpx)
-      └── test_ui.py                 ← UI тесты: клики, слайдеры, анимации (Playwright)
+├── PLAN.md                        ← этот файл
+├── CLAUDE.md                      ← инструкции проекта
+├── pyproject.toml                 ← зависимости проекта (uv)
+├── requirements.txt               ← pip-зависимости (из pyproject.toml)
+├── main.py                        ← FastAPI приложение, роуты
+├── corpus.py                      ← корпус из 10 предложений (единый источник, читает data/corpus.txt)
+├── download_models.py             ← однократная загрузка YandexGPT-5-Lite-8B + fastText
+├── pretrain_models.py             ← предобучение RNN/LSTM, сохраняет models/rnn_models.pt
+├── utils.py                       ← общие утилиты
+├── routers/
+│   ├── ngram.py                   ← API для N-gram
+│   ├── rnn.py                     ← API для RNN/LSTM симуляции
+│   ├── embeddings.py              ← API для Word2Vec (fastText vectors)
+│   └── llm_era.py                 ← API для LLM-эры (YandexGPT-5-Lite-8B)
+├── static/
+│   ├── style.css                  ← тёмная тема, цвета эпох, анимации
+│   ├── nav.js                     ← sidebar с прогрессом, кнопки next/prev
+│   ├── utils.js                   ← animateFlow(), общие JS-утилиты
+│   └── tooltip.js                 ← универсальный компонент кнопки `?`
+├── templates/
+│   ├── index.html                 ← главная + интерактивный timeline
+│   ├── module-1-ngram.html        ← N-gram / Цепи Маркова
+│   ├── module-1b-training.html    ← визуализация обучения модели
+│   ├── module-1c-neuron.html     ← мозг→нейрон, перцептрон, XOR
+│   ├── module-2-embeddings.html   ← Word2Vec / Эмбеддинги
+│   ├── module-3-rnn-lstm.html     ← RNN + LSTM
+│   ├── module-4-llm-era.html      ← LLM-эра: конструктор улучшений
+│   └── module-5-compare.html      ← Финальное сравнение
+└── tests/
+    ├── conftest.py                ← фикстуры: FastAPI + Playwright
+    ├── test_smoke.py              ← базовые тесты: страницы открываются
+    ├── test_api.py                ← тесты API эндпоинтов (httpx)
+    ├── test_corpus.py             ← проверки качества корпуса
+    └── test_ui.py                 ← UI тесты: клики, слайдеры, анимации (Playwright)
 ```
 
 ---
@@ -100,8 +106,8 @@ research/
 | N-gram      | Строит таблицу переходов, генерирует продолжение               |
 | RNN/LSTM    | PyTorch-модель генерирует продолжение, слайдер hidden size      |
 | Word2Vec    | Арифметика векторов на словах корпуса + кураторский VOCAB      |
-| LLM-эра     | Attention веса на предложениях корпуса + генерация ruGPT-3 XL  |
-| Compare     | N-gram / RNN / ruGPT-3 XL дополняют одно предложение рядом     |
+| LLM-эра     | Attention веса на предложениях корпуса + генерация YandexGPT     |
+| Compare     | N-gram / RNN / YandexGPT дополняют одно предложение рядом        |
 
 Файл: `corpus.py` читает `data/corpus.txt` — меняем txt, все роутеры автоматически берут новый корпус.
 
@@ -128,9 +134,9 @@ research/
 - [x] `tests/conftest.py`: фикстуры — запуск FastAPI через subprocess (uvicorn на порту 8000) + Playwright browser
 - [x] `tests/test_smoke.py`: базовый тест — сервер стартует, `/` отдаёт 200, страница открывается в браузере
 - [x] `download_models.py`: скрипт однократной загрузки моделей
-  - ruGPT-3 XL (~5GB) из HuggingFace: `ai-forever/rugpt3xl` → `models/rugpt3xl/`
-  - fastText русская модель `cc.ru.300.bin.gz` (~2.6GB) → `models/cc.ru.300.bin`
-  - Флаги: `--rugpt3-only`, `--fasttext-only`
+  - YandexGPT-5-Lite-8B из HuggingFace: `yandex/YandexGPT-5-Lite-8B-pretrain` → `models/yandexgpt-5-lite-8b/`
+  - fastText модель `cc.ru.300.bin.gz` (~2.6GB) → `models/cc.ru.300.bin`
+  - Флаги: `--yandex-only`, `--fasttext-only`
   - Проверка что модели загрузились корректно
   - Запускается один раз: `python download_models.py`
 
@@ -161,7 +167,7 @@ research/
 - [x] Seed-контрол в сайдбаре (глобальный, работает на всех модулях): фиксированный (воспроизводимый) или -1 (случайный каждый раз); сохраняется в localStorage
 - [x] Блок "Проблема": объяснение ограничений
 
-### Шаг 5 — `module-2-rnn-lstm.html` (RNN + LSTM)
+### Шаг 5 — `module-3-rnn-lstm.html` (RNN + LSTM)
 - [x] `routers/rnn.py`: эндпоинты:
   - `GET /api/rnn/generate?hidden_size=8&start=слово&words=5` → предсказание следующих слов (RNN)
   - `GET /api/rnn/lstm/generate?hidden_size=8&start=слово&words=5` → предсказание следующих слов (LSTM)
@@ -176,7 +182,7 @@ research/
 - [x] Текстовый блок "RNN vs Transformer": таблица — мягкое затухание vs равный доступ ко всем токенам
 - [x] Переключатель RNN ↔ LSTM: SVG-схема меняется, текстовое объяснение forget gate
 
-### Шаг 6 — `module-3-embeddings.html` (Word2Vec / Эмбеддинги)
+### Шаг 6 — `module-2-embeddings.html` (Word2Vec / Эмбеддинги)
 - [x] Совместно подобрать ~40-60 русских слов в семантических группах:
   - Животные: кот, собака, лошадь, рыба, птица, волк, медведь…
   - Люди и роли: мужчина, женщина, король, королева, ребёнок, врач…
@@ -204,21 +210,21 @@ research/
   - Анимация: токены корпуса → энкодер → один вектор (bottleneck) → декодер
   - Визуально видно что вся информация сжата в одну точку — проблема очевидна
 - [x] Тумблер "Attention": появляется новый блок
-  - Реальная матрица весов внимания из ruGPT-3 large на нашем корпусе
-  - `routers/llm_era.py`: `GET /api/llm-era/attention?sentence=...` → матрица весов: слой 24 из 24, усреднение по всем 16 головам → `[seq_len × seq_len]`
+  - Реальная матрица весов внимания из YandexGPT-5-Lite-8B на нашем корпусе
+  - `routers/llm_era.py`: `GET /api/llm-era/attention?sentence=...` → матрица весов (per-head или усреднение) → `[seq_len × seq_len]`
   - Тепловая карта: видно какие слова "смотрят" друг на друга
 - [x] Transformer: **рассказывается устно** — параллельность и multi-head, без визуального блока
 - [x] Тумблер "Масштаб (LLM)": появляется новый блок
-  - Реальная генерация через ruGPT-3 large (~3GB, HuggingFace: ai-forever/rugpt3large_based_on_gpt2)
+  - Реальная генерация через YandexGPT-5-Lite-8B (HuggingFace: yandex/YandexGPT-5-Lite-8B-pretrain)
   - `POST /api/llm-era/generate` → продолжение корпуса от LLM
-  - Attention веса тоже берём из ruGPT-3 large — одна модель для всего
+  - Attention веса тоже берём из YandexGPT — одна модель для всего
   - Шкала параметров: 117M → 1.3B → 175B → ~1T — визуальное ощущение разницы
   - Слайдер температуры: debounce 1 сек → запрос генерации после паузы
 
 ### Шаг 8 — `module-5-compare.html` (Финальное сравнение)
 - [ ] Одна задача из корпуса ("дополни предложение") — 3 результата рядом: N-gram / RNN / LLM-эра
   - N-gram и RNN: реальные вычисления через API
-  - LLM-эра: реальная генерация через ruGPT-3 XL
+  - LLM-эра: реальная генерация через YandexGPT-5-Lite-8B
 - [ ] Сравнительная таблица по метрикам:
   - Память: N слов / деградирует с расстоянием / равный доступ внутри окна
   - Обучение: подсчёт частот / последовательно / параллельно

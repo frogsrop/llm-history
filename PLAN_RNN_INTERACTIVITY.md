@@ -84,7 +84,7 @@
 
 **Что нужно изменить:**
 - `routers/rnn.py`: добавить `EventSourceResponse` endpoint
-- `module-2-rnn-lstm.html`: EventSource вместо apiFetch
+- `module-3-rnn-lstm.html`: EventSource вместо apiFetch
 
 **Зачем:** Для длинных генераций (10+ слов) — более реалистично, нет задержки на весь fetch.
 **Сложность:** Требует `sse-starlette` библиотеки, изменение backend.

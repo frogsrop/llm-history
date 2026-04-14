@@ -233,55 +233,16 @@ def test_ngram_corpus_displayed(page, server):
     assert corpus_block.count() >= 1
     assert "кот" in corpus_block.first.inner_text()
 
-# === Step 5: RNN ===
-def test_rnn_page_loads(page, server):
-    page.goto(server + "/module/2")
-    page.wait_for_load_state("networkidle")
-    errors = []
-    page.on("pageerror", lambda e: errors.append(str(e)))
-    assert errors == [], f"JS errors: {errors}"
-
-def test_rnn_hidden_slider_present(page, server):
-    page.goto(server + "/module/2")
-    page.wait_for_load_state("networkidle")
-    slider = page.locator("#hidden-size")
-    assert slider.count() == 1, "Slider #hidden-size not found"
-
-def test_rnn_generate_button(page, server):
-    page.goto(server + "/module/2")
-    page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(500)
-    page.locator("#generate-btn").click()
-    page.wait_for_timeout(1500)
-    result = page.locator("#generation-result")
-    text = result.inner_text()
-    assert text.strip() != "" and "Нажмите" not in text  # checks result is not the pre-generation placeholder
-
-def test_rnn_lstm_toggle(page, server):
-    page.goto(server + "/module/2")
-    page.wait_for_load_state("networkidle")
-    # switch to LSTM
-    page.locator("#btn-lstm").click()
-    page.wait_for_timeout(300)
-    active = page.locator("#btn-lstm.active")
-    assert active.count() == 1, "LSTM button did not become active"
-
-def test_rnn_svg_diagram_present(page, server):
-    page.goto(server + "/module/2")
-    page.wait_for_load_state("networkidle")
-    svg = page.locator(".diagram-svg")
-    assert svg.count() >= 1, "SVG diagram not found"
-
-# === Step 6: Embeddings ===
+# === Step 5: Embeddings ===
 def test_embeddings_page_loads(page, server):
-    page.goto(server + "/module/3")
+    page.goto(server + "/module/2")
     page.wait_for_load_state("networkidle")
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     assert errors == [], f"JS errors: {errors}"
 
 def test_embeddings_canvas_not_empty(page, server):
-    page.goto(server + "/module/3")
+    page.goto(server + "/module/2")
     page.wait_for_timeout(15000)
     not_empty = page.evaluate("""() => {
         const canvas = document.querySelector('canvas');
@@ -293,16 +254,55 @@ def test_embeddings_canvas_not_empty(page, server):
     assert not_empty
 
 def test_embeddings_analogy_input(page, server):
-    page.goto(server + "/module/3")
+    page.goto(server + "/module/2")
     page.wait_for_timeout(2000)
     inp = page.locator("#analogy-input")
     assert inp.count() == 1, "Analogy input not found"
 
 def test_embeddings_example_buttons(page, server):
-    page.goto(server + "/module/3")
+    page.goto(server + "/module/2")
     page.wait_for_timeout(2000)
     btns = page.locator(".example-btn")
     assert btns.count() >= 2, f"Expected at least 2 example buttons, found {btns.count()}"
+
+# === Step 6: RNN ===
+def test_rnn_page_loads(page, server):
+    page.goto(server + "/module/3")
+    page.wait_for_load_state("networkidle")
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    assert errors == [], f"JS errors: {errors}"
+
+def test_rnn_hidden_slider_present(page, server):
+    page.goto(server + "/module/3")
+    page.wait_for_load_state("networkidle")
+    slider = page.locator("#hidden-size")
+    assert slider.count() == 1, "Slider #hidden-size not found"
+
+def test_rnn_generate_button(page, server):
+    page.goto(server + "/module/3")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(500)
+    page.locator("#generate-btn").click()
+    page.wait_for_timeout(1500)
+    result = page.locator("#generation-result")
+    text = result.inner_text()
+    assert text.strip() != "" and "Нажмите" not in text  # checks result is not the pre-generation placeholder
+
+def test_rnn_lstm_toggle(page, server):
+    page.goto(server + "/module/3")
+    page.wait_for_load_state("networkidle")
+    # switch to LSTM
+    page.locator("#btn-lstm").click()
+    page.wait_for_timeout(300)
+    active = page.locator("#btn-lstm.active")
+    assert active.count() == 1, "LSTM button did not become active"
+
+def test_rnn_svg_diagram_present(page, server):
+    page.goto(server + "/module/3")
+    page.wait_for_load_state("networkidle")
+    svg = page.locator(".diagram-svg")
+    assert svg.count() >= 1, "SVG diagram not found"
 
 # === Step 7: LLM Era ===
 def test_llm_page_loads(page, server):

@@ -86,7 +86,7 @@ def server():
     else:
         print(f"[conftest] WARNING: Embeddings model NOT ready after {EMB_TIMEOUT}s — embeddings tests will fail", flush=True)
 
-    # Wait for LLM-era model to be ready (Qwen2.5-3B, can take a while on first load)
+    # Wait for LLM-era model to be ready (YandexGPT-5-Lite-8B, can take a while on first load)
     LLM_TIMEOUT = 600
     llm_deadline = time.time() + LLM_TIMEOUT
     print(f"\n[conftest] Waiting for LLM-era model (up to {LLM_TIMEOUT}s)...", flush=True)

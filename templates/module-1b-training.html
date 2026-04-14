@@ -136,22 +136,6 @@
       min-width: 60px;
       text-align: right;
     }
-    .grad-hint {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      min-width: 70px;
-      font-size: 12px;
-      font-weight: 600;
-      margin-left: auto;
-    }
-    .grad-arrow {
-      font-size: 16px;
-      line-height: 1;
-    }
-    .grad-down { color: #3fb950; }
-    .grad-up { color: var(--epoch-llm); }
-    .grad-zero { color: var(--text-muted); }
     .w-btn {
       padding: 6px 14px;
       border-radius: var(--radius);
@@ -350,7 +334,7 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════
-         SLIDE 2: Neural net  x → 4 σ → 2 σ → y  (2 hidden layers)
+         SLIDE 2: Neural net  x → 4 LeakyReLU → 4 LeakyReLU → y  (2 hidden layers)
          Target: y = (x⁴/5 + 4x³) / 1000  on [-20, 20]
          ════════════════════════════════════════════════════ -->
     <div id="slide-nn" style="display:none">
@@ -445,9 +429,10 @@
       </div>
 
       <div class="callout">
-        <strong>&#x25B2; / &#x25BC;</strong> рядом с весом — градиент. Стрелка показывает, куда двигать вес, чтобы уменьшить ошибку.
-        Число рядом — насколько сильно этот вес влияет. Это и есть суть <strong>backpropagation</strong> — автоматический расчёт
-        градиентов для каждого веса, чтобы <strong>градиентный спуск</strong> знал, куда шагать.
+        Цвет ребра — величина веса (синий = малый, красный = большой).<br><br>
+        Кнопка <strong>Grad step</strong> запускает <strong>backpropagation</strong> — алгоритм вычисляет,
+        как сдвинуть каждый вес, чтобы ошибка уменьшилась.<br><br>
+        Это и есть <strong>градиентный спуск</strong>: автоматическая подстройка всех весов за один шаг.
       </div>
     </div>
   </main>
@@ -614,7 +599,7 @@
 
   // ══════════════════════════════════════════════════════
   // SLIDE 2: DEEP NEURAL NET — generic N hidden layers
-  // Architecture: x → 10σ → 10σ → 10σ → 10σ → 10σ → y
+  // Architecture: x → 4 LeakyReLU → 4 LeakyReLU → y
   // Target: y = (x⁴/5 + 4x³) / 1000  on [-20, 20]
   // ══════════════════════════════════════════════════════
   const LAYERS = [4, 4];
@@ -935,21 +920,6 @@
     }
     s += `<path d="${mpath}" fill="none" stroke="#f59e0b" stroke-width="2.5"/>`;
 
-
-    // History
-    nn.history.forEach((d, i) => {
-      const op = Math.max(0.1, 0.6 - (nn.history.length - i) * 0.02);
-      s += `<circle cx="${sx(d.x)}" cy="${sy(d.yReal)}" r="3" fill="#3fb950" opacity="${op}"/>`;
-    });
-
-    // Current point
-    const d = nn.current;
-    const yPReal = denorm(nnForward(d.x, nn.w).yP);
-    if (Math.abs(yPReal - d.yReal) > 0.1)
-      s += `<line x1="${sx(d.x)}" y1="${sy(d.yReal)}" x2="${sx(d.x)}" y2="${sy(yPReal)}" stroke="var(--epoch-llm)" stroke-width="2.5" stroke-dasharray="3,2" opacity="0.8"/>`;
-    s += `<circle cx="${sx(d.x)}" cy="${sy(d.yReal)}" r="7" fill="#3fb950"/>`;
-    s += `<circle cx="${sx(d.x)}" cy="${sy(d.yReal)}" r="12" fill="none" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.5"/>`;
-    s += `<circle cx="${sx(d.x)}" cy="${sy(yPReal)}" r="6" fill="#f59e0b" stroke="var(--bg)" stroke-width="1.5"/>`;
 
     s += `<text x="${W / 2}" y="${H - 4}" text-anchor="middle" fill="var(--text-muted)" font-size="12">x</text>`;
     s += `<text x="14" y="${H / 2}" text-anchor="middle" fill="var(--text-muted)" font-size="12" transform="rotate(-90,14,${H / 2})">y</text>`;

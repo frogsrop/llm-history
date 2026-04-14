@@ -23,14 +23,14 @@ Russian is allowed only in user-facing content: corpus text, HTML templates, UI 
 ## Training
 Use the fastest available device for each model type:
 - **TinyRNN / TinyLSTM** (PyTorch, tiny vocab) — use `device = torch.device("cpu")` explicitly. GPU overhead exceeds compute for these models (CPU: ~30s, GPU: ~130s on RTX 5080).
-- **Qwen2.5-7B-AWQ / large Transformer models** — use `device = torch.device("cuda" if torch.cuda.is_available() else "cpu")` and move all tensors/models to that device.
+- **YandexGPT-5-Lite-8B / large Transformer models** — loaded via bitsandbytes `load_in_4bit` with `device_map="auto"` (handles device placement automatically).
 
 ## PyTorch / CUDA
 RTX 5080 (Blackwell, sm_120) requires PyTorch nightly with CUDA 12.8 — stable releases do not support this GPU.
 Install: `pip install --pre --upgrade torch --index-url https://download.pytorch.org/whl/nightly/cu128`
 
 ## Tokenizer & Cyrillic
-Qwen2.5 uses a SentencePiece tokenizer with native Unicode support — Cyrillic works correctly.
+YandexGPT-5-Lite-8B uses a tokenizer optimized for Russian — common Russian words are single tokens.
 For consistent token display, use `tokenizer.decode([token_id]).strip()` per token.
 
 ## Project Structure
@@ -39,17 +39,19 @@ For consistent token display, use `tokenizer.decode([token_id]).strip()` per tok
 ├── CLAUDE.md                — project instructions (this file)
 ├── .gitignore               — git ignore rules
 ├── PLAN.md                  — implementation plan, steps with checkboxes
+├── pyproject.toml           — project metadata + dependencies (uv)
+├── requirements.txt         — pip dependencies (generated from pyproject.toml)
+├── pytest.ini               — pytest config
 ├── main.py                  — FastAPI app, routes, startup hooks
 ├── corpus.py                — unified training corpus (single source of truth)
 ├── pretrain_models.py       — one-time RNN/LSTM training, saves models/rnn_models.pt
-├── download_models.py       — one-time download: Qwen2.5-7B-AWQ + fastText cc.ru.300.bin
-├── requirements.txt         — pip dependencies
-├── pytest.ini               — pytest config
+├── download_models.py       — one-time download: YandexGPT-5-Lite-8B + fastText
+├── utils.py                 — shared utility functions
 ├── routers/
 │   ├── ngram.py             — N-gram / Markov chain API
 │   ├── rnn.py               — TinyRNN + TinyLSTM (PyTorch), pretraining cache, /vocab endpoint
 │   ├── embeddings.py        — fastText word vectors, analogy API
-│   └── llm_era.py           — Qwen2.5-7B-AWQ attention + generation
+│   └── llm_era.py           — YandexGPT-5-Lite-8B attention + generation
 ├── static/
 │   ├── style.css            — dark theme, epoch color coding
 │   ├── nav.js               — sidebar, prev/next, localStorage progress
@@ -58,14 +60,16 @@ For consistent token display, use `tokenizer.decode([token_id]).strip()` per tok
 ├── templates/
 │   ├── index.html           — main page + interactive timeline
 │   ├── module-1-ngram.html  — N-gram / Markov chains
-│   ├── module-2-rnn-lstm.html — RNN + LSTM
-│   ├── module-3-embeddings.html — Word2Vec / embeddings
+│   ├── module-1b-training.html — model training visualization
+│   ├── module-1c-neuron.html — brain→neuron, perceptron, XOR
+│   ├── module-2-embeddings.html — Word2Vec / embeddings
+│   ├── module-3-rnn-lstm.html — RNN + LSTM
 │   ├── module-4-llm-era.html — LLM era: improvement constructor
 │   └── module-5-compare.html — final comparison
 ├── models/
 │   ├── rnn_models.pt        — pretrained RNN/LSTM weights (regenerate with pretrain_models.py)
-│   ├── qwen2.5-7b-awq/      — Qwen2.5-7B-AWQ weights (Qwen/Qwen2.5-7B-AWQ)
-│   └── cc.ru.300.bin        — fastText Russian vectors (cc.ru.300.bin, ~2.6GB)
+│   ├── yandexgpt-5-lite-8b/ — YandexGPT-5-Lite-8B weights (yandex/YandexGPT-5-Lite-8B-pretrain)
+│   └── cc.ru.300.bin        — fastText Russian vectors (~2.6GB)
 ├── data/
 │   └── corpus.txt           — raw corpus sentences (one per line)
 └── tests/
@@ -83,9 +87,9 @@ Completed steps (see PLAN.md for full checklist):
 - **Step 2** — Corpus selection: 3 Russian sentences in `corpus.py`
 - **Step 3** — `index.html`: interactive timeline, module cards, progress bar
 - **Step 4** — `module-1-ngram.html`: N-gram table, generator, seed control
-- **Step 5** — `module-2-rnn-lstm.html`: TinyRNN + TinyLSTM (PyTorch), hidden size slider, SVG animation (corpus-adaptive via /api/rnn/vocab)
-- **Step 6** — `module-3-embeddings.html`: fastText vectors, 2D PCA word map, analogy arithmetic, before/after comparison
-- **Step 7** — `module-4-llm-era.html`: Seq2Seq animation, attention heatmap (Qwen2.5-7B-AWQ, per-head view), cumulative toggles, temperature-controlled generation
+- **Step 5** — `module-2-embeddings.html`: fastText vectors, 2D PCA word map, analogy arithmetic, before/after comparison
+- **Step 6** — `module-3-rnn-lstm.html`: TinyRNN + TinyLSTM (PyTorch), hidden size slider, SVG animation (corpus-adaptive via /api/rnn/vocab)
+- **Step 7** — `module-4-llm-era.html`: Seq2Seq animation, attention heatmap (YandexGPT-5-Lite-8B, per-head view), cumulative toggles, temperature-controlled generation
 
 Pending:
 - **Step 8** — `module-5-compare.html` (side-by-side comparison)

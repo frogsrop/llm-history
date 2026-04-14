@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Нейрон — LLM Evolution</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* ── Brain-neuron SVG ────────────────────────────── */
+    .neuron-svg-wrap { margin: 16px 0; text-align: center; overflow-x: auto; }
+    #brain-neuron-svg { max-width: 860px; width: 100%; }
+
+    .signal-path {
+      stroke-dasharray: 8 6;
+      stroke-dashoffset: 100;
+      transition: stroke-dashoffset 0.8s ease;
+    }
+    .signal-path.active { stroke-dashoffset: 0; }
+
+    .soma-glow { transition: fill 0.4s ease, filter 0.4s ease; }
+    .soma-glow.fired {
+      fill: var(--epoch-neuron);
+      filter: drop-shadow(0 0 12px var(--epoch-neuron));
+    }
+
+    .label-bio { fill: var(--text-muted); font-size: 11px; }
+    .label-math { fill: var(--epoch-neuron); font-size: 12px; font-weight: 600; }
+
+    /* ── Backprop card ──────────────────────────────── */
+    #bp-svg { max-width: 860px; width: 100%; }
+
+    .bp-fwd {
+      stroke-dasharray: 8 6;
+      stroke-dashoffset: 100;
+      opacity: 0;
+      transition: stroke-dashoffset 0.6s ease, opacity 0.15s ease;
+    }
+    .bp-fwd.active { stroke-dashoffset: 0; opacity: 1; }
+
+    .bp-edge {
+      transition: stroke 0.5s ease, stroke-width 0.5s ease;
+    }
+    .bp-edge.backprop {
+      stroke: #F97316;
+    }
+
+    .bp-node {
+      fill: var(--bg-card);
+      stroke: var(--text-muted);
+      stroke-width: 2;
+      transition: fill 0.3s ease, stroke 0.3s ease, filter 0.3s ease;
+    }
+    .bp-node.fwd {
+      fill: rgba(52,211,153,0.15);
+      stroke: var(--epoch-neuron);
+      filter: drop-shadow(0 0 6px var(--epoch-neuron));
+    }
+    .bp-node.err {
+      fill: rgba(248,113,113,0.2);
+      stroke: var(--epoch-llm);
+      filter: drop-shadow(0 0 8px var(--epoch-llm));
+    }
+    .bp-node.ok {
+      fill: rgba(52,211,153,0.3);
+      stroke: var(--epoch-neuron);
+      filter: drop-shadow(0 0 10px var(--epoch-neuron));
+    }
+
+    .loss-bar-wrap {
+      background: var(--border);
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+      flex: 1;
+    }
+    .loss-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease, background 0.6s ease;
+    }
+
+    /* ── Dog pose pixel art ────────────────────────── */
+    .dog-pose {
+      transition: opacity 0.35s ease;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+    }
+  </style>
+</head>
+<body>
+  <nav id="sidebar"></nav>
+
+  <main id="main-content">
+    <h1 class="section-title">
+      <span class="epoch-bar epoch-neuron"></span>Нейрон
+    </h1>
+    <p class="section-sub">1943–1969 — от мозга к первой нейронной сети</p>
+
+    <!-- ═══════════════════════════════════════════════════
+         CARD 1: Brain → Artificial neuron
+         ═══════════════════════════════════════════════════ -->
+    <div class="card">
+      <div class="card-title">
+        Мозг → Искусственный нейрон
+        <span class="term" style="margin-left:8px; font-size:14px; font-weight:400; color:var(--text-muted);">
+          <button class="hint-btn" data-hint="В 1943 году МакКаллок и Питтс предложили математическую модель нейрона. Идея проста: если сумма входных сигналов превышает порог — нейрон срабатывает.">?</button>
+        </span>
+      </div>
+
+      <div class="neuron-svg-wrap">
+        <svg id="brain-neuron-svg" viewBox="0 0 860 300" xmlns="http://www.w3.org/2000/svg">
+          <!-- ── Left: biological neuron ── -->
+          <text x="170" y="22" fill="var(--text-muted)" font-size="14" text-anchor="middle" font-weight="600">Биологический нейрон</text>
+
+          <!-- Dendrites — branching tree structure -->
+          <!-- Dendrite 1 (upper) — main + 2 sub-branches -->
+          <path d="M120,115 C95,100 65,85 40,72" stroke="var(--text-muted)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M68,86 C50,72 30,62 12,55" stroke="var(--text-muted)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <path d="M68,86 C52,92 35,100 18,98" stroke="var(--text-muted)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M95,100 C82,92 68,78 50,68" stroke="var(--text-muted)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+
+          <!-- Dendrite 2 (middle) — main + 2 sub-branches -->
+          <path d="M118,148 C90,148 55,145 30,142" stroke="var(--text-muted)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M58,145 C40,135 22,128 8,122" stroke="var(--text-muted)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <path d="M58,145 C42,152 25,160 10,162" stroke="var(--text-muted)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+          <!-- Dendrite 3 (lower) — main + 2 sub-branches -->
+          <path d="M125,185 C100,200 70,215 42,228" stroke="var(--text-muted)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M72,214 C55,225 35,238 15,248" stroke="var(--text-muted)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <path d="M72,214 C58,208 40,210 20,218" stroke="var(--text-muted)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M100,200 C90,210 75,228 60,242" stroke="var(--text-muted)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+
+          <!-- Signal paths (animated) — follow main dendrite branches -->
+          <path d="M40,72 C65,85 95,100 120,115" stroke="var(--epoch-neuron)" stroke-width="3" fill="none" class="signal-path" id="sig-bio-1"/>
+          <path d="M30,142 C55,145 90,148 118,148" stroke="var(--epoch-neuron)" stroke-width="3" fill="none" class="signal-path" id="sig-bio-2"/>
+          <path d="M42,228 C70,215 100,200 125,185" stroke="var(--epoch-neuron)" stroke-width="3" fill="none" class="signal-path" id="sig-bio-3"/>
+
+          <!-- Soma (cell body) — organic blob shape -->
+          <path d="M122,118 C118,100 138,88 165,92 C192,96 212,112 210,140 C208,162 200,188 180,196 C160,202 135,196 124,178 C116,164 118,140 122,118Z"
+                fill="var(--bg-card)" stroke="var(--text-muted)" stroke-width="2" class="soma-glow" id="soma-bio"/>
+
+          <!-- Nucleus -->
+          <ellipse cx="168" cy="145" rx="18" ry="16" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-opacity="0.6"/>
+          <ellipse cx="165" cy="143" rx="6" ry="5" fill="var(--text-muted)" fill-opacity="0.3"/>
+
+          <!-- Axon hillock + axon line -->
+          <path d="M210,148 C220,148 225,150 235,150" stroke="var(--text-muted)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <line x1="235" y1="150" x2="370" y2="150" stroke="var(--text-muted)" stroke-width="1.8"/>
+
+          <!-- Myelin sheath segments -->
+          <rect x="238" y="140" width="26" height="20" rx="10" fill="var(--bg-card)" stroke="var(--text-muted)" stroke-width="1.5" stroke-opacity="0.7"/>
+          <rect x="272" y="140" width="26" height="20" rx="10" fill="var(--bg-card)" stroke="var(--text-muted)" stroke-width="1.5" stroke-opacity="0.7"/>
+          <rect x="306" y="140" width="26" height="20" rx="10" fill="var(--bg-card)" stroke="var(--text-muted)" stroke-width="1.5" stroke-opacity="0.7"/>
+
+          <!-- Axon terminals (synapses) -->
+          <path d="M370,150 C378,145 385,138 390,132" stroke="var(--text-muted)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M370,150 C380,150 388,150 395,150" stroke="var(--text-muted)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M370,150 C378,155 385,162 390,168" stroke="var(--text-muted)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <circle cx="390" cy="132" r="3.5" fill="var(--text-muted)" fill-opacity="0.5"/>
+          <circle cx="395" cy="150" r="3.5" fill="var(--text-muted)" fill-opacity="0.5"/>
+          <circle cx="390" cy="168" r="3.5" fill="var(--text-muted)" fill-opacity="0.5"/>
+
+          <!-- Axon signal path (animated) -->
+          <path d="M210,148 C220,148 225,150 395,150" stroke="var(--epoch-neuron)" stroke-width="3" fill="none" class="signal-path" id="sig-bio-out"/>
+
+          <!-- Labels -->
+          <text x="32" y="46" class="label-bio">Дендриты</text>
+          <text x="168" y="148" fill="var(--text)" font-size="10" text-anchor="middle" opacity="0.7">Тело клетки</text>
+          <text x="286" y="132" class="label-bio" text-anchor="middle">Аксон</text>
+          <text x="286" y="175" class="label-bio" text-anchor="middle" font-size="9" opacity="0.7">миелин</text>
+          <text x="393" y="185" class="label-bio" font-size="9" opacity="0.7">синапсы</text>
+
+          <!-- ── Divider ── -->
+          <text x="410" y="155" fill="var(--text-muted)" font-size="20" text-anchor="middle">≈</text>
+          <line x1="410" y1="40" x2="410" y2="130" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 4"/>
+          <line x1="410" y1="170" x2="410" y2="280" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 4"/>
+
+          <!-- ── Right: artificial neuron ── -->
+          <text x="640" y="22" fill="var(--text-muted)" font-size="14" text-anchor="middle" font-weight="600">Искусственный нейрон</text>
+
+          <!-- Input lines -->
+          <line x1="480" y1="80" x2="600" y2="130" stroke="var(--text-muted)" stroke-width="2"/>
+          <line x1="480" y1="150" x2="600" y2="150" stroke="var(--text-muted)" stroke-width="2"/>
+          <line x1="480" y1="220" x2="600" y2="170" stroke="var(--text-muted)" stroke-width="2"/>
+
+          <!-- Signal paths (animated) -->
+          <line x1="480" y1="80" x2="600" y2="130" stroke="var(--epoch-neuron)" stroke-width="3" class="signal-path" id="sig-art-1"/>
+          <line x1="480" y1="150" x2="600" y2="150" stroke="var(--epoch-neuron)" stroke-width="3" class="signal-path" id="sig-art-2"/>
+          <line x1="480" y1="220" x2="600" y2="170" stroke="var(--epoch-neuron)" stroke-width="3" class="signal-path" id="sig-art-3"/>
+
+          <!-- Neuron node -->
+          <circle cx="640" cy="150" r="42" fill="var(--bg-card)" stroke="var(--text-muted)" stroke-width="2" class="soma-glow" id="soma-art"/>
+          <text x="640" y="146" fill="var(--text)" font-size="15" text-anchor="middle" font-weight="600">Σ</text>
+          <text x="640" y="165" fill="var(--text-muted)" font-size="11" text-anchor="middle" id="sum-display">= ?</text>
+
+          <!-- Output line -->
+          <line x1="682" y1="150" x2="790" y2="150" stroke="var(--text-muted)" stroke-width="2"/>
+          <line x1="682" y1="150" x2="790" y2="150" stroke="var(--epoch-neuron)" stroke-width="3" class="signal-path" id="sig-art-out"/>
+
+          <!-- Output value -->
+          <circle cx="810" cy="150" r="18" fill="var(--bg-card)" stroke="var(--text-muted)" stroke-width="2" id="output-circle"/>
+          <text x="810" y="155" fill="var(--text)" font-size="16" text-anchor="middle" font-weight="700" id="output-text">?</text>
+
+          <!-- Labels: inputs -->
+          <text x="472" y="76" class="label-math" text-anchor="end">x₁ = 0.7</text>
+          <text x="472" y="146" class="label-math" text-anchor="end">x₂ = 0.9</text>
+          <text x="472" y="226" class="label-math" text-anchor="end">x₃ = 0.3</text>
+
+          <!-- Labels: weights on edges -->
+          <text x="535" y="96" fill="var(--accent)" font-size="11" text-anchor="middle">w₁=0.6</text>
+          <text x="535" y="144" fill="var(--accent)" font-size="11" text-anchor="middle">w₂=0.8</text>
+          <text x="535" y="204" fill="var(--accent)" font-size="11" text-anchor="middle">w₃=0.4</text>
+
+          <!-- Output label -->
+          <text x="810" y="182" class="label-bio" text-anchor="middle">выход</text>
+        </svg>
+      </div>
+
+      <div style="text-align:center;">
+        <button class="btn btn-primary" id="btn-signal" style="border-color:var(--epoch-neuron); color:var(--epoch-neuron);">
+          Показать сигналы
+        </button>
+        <span style="font-size:12px; color:var(--text-muted); margin-left:12px;">или нажмите Пробел</span>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         CARD 2: Backprop = Dog Training
+         ═══════════════════════════════════════════════════ -->
+    <div class="card">
+      <div class="card-title">
+        Обучение = дрессировка
+        <span class="term" style="margin-left:8px; font-size:14px; font-weight:400; color:var(--text-muted);">
+          <button class="hint-btn" data-hint="Backpropagation (обратное распространение ошибки) — алгоритм обучения нейросети. Сеть делает предсказание, сравнивает с правильным ответом, и корректирует все веса от выхода к входу. Как дрессировка: собака пробует — получает обратную связь — корректирует поведение.">?</button>
+        </span>
+      </div>
+
+      <div class="neuron-svg-wrap">
+        <svg id="bp-svg" viewBox="0 0 860 300" xmlns="http://www.w3.org/2000/svg">
+          <!-- ════ Left: Dog Training ════ -->
+          <text x="195" y="24" fill="var(--text-muted)" font-size="14" text-anchor="middle" font-weight="600">Дрессировка</text>
+
+          <!-- Command bubble -->
+          <rect x="130" y="44" width="130" height="28" rx="10" fill="none" stroke="var(--epoch-neuron)" stroke-width="1.5" stroke-opacity="0.5"/>
+          <text x="195" y="64" id="bp-command" fill="var(--epoch-neuron)" font-size="14" text-anchor="middle" font-weight="600">«...»</text>
+
+          <!-- Arrow down -->
+          <line x1="195" y1="76" x2="195" y2="100" stroke="var(--text-muted)" stroke-width="1.5"/>
+          <polygon points="190,98 200,98 195,106" fill="var(--text-muted)"/>
+
+          <!-- Dog poses (pixel art PNGs, ground level y≈207) -->
+          <image id="dog-stand"  class="dog-pose" href="/static/dogs/stand.png"  x="147" y="109" width="97"  height="98"  opacity="1"/>
+          <image id="dog-crouch" class="dog-pose" href="/static/dogs/crouch.png" x="138" y="139" width="113" height="68"  opacity="0"/>
+          <image id="dog-sit"    class="dog-pose" href="/static/dogs/sit.png"    x="155" y="114" width="82"  height="93"  opacity="0"/>
+          <image id="dog-lie"    class="dog-pose" href="/static/dogs/lie.png"    x="140" y="149" width="110" height="58"  opacity="0"/>
+
+          <!-- Action (dynamic) -->
+          <text x="195" y="218" id="bp-dog-action" fill="var(--text-muted)" font-size="16" text-anchor="middle" font-style="italic"></text>
+
+          <!-- Feedback (dynamic) -->
+          <text x="195" y="268" id="bp-feedback" fill="var(--text-muted)" font-size="22" text-anchor="middle" font-weight="700"></text>
+
+          <!-- ════ Divider ════ -->
+          <line x1="400" y1="40" x2="400" y2="125" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 4"/>
+          <text x="400" y="157" fill="var(--text-muted)" font-size="20" text-anchor="middle">≈</text>
+          <line x1="400" y1="172" x2="400" y2="280" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 4"/>
+
+          <!-- ════ Right: Neural Network ════ -->
+          <text x="640" y="24" fill="var(--text-muted)" font-size="14" text-anchor="middle" font-weight="600">Нейросеть</text>
+
+          <!-- Base edges -->
+          <line x1="490" y1="75"  x2="620" y2="115" stroke="var(--text-muted)" stroke-width="1.5" class="bp-edge" id="bp-e-0"/>
+          <line x1="490" y1="75"  x2="620" y2="195" stroke="var(--text-muted)" stroke-width="1.5" class="bp-edge" id="bp-e-1"/>
+          <line x1="490" y1="155" x2="620" y2="115" stroke="var(--text-muted)" stroke-width="1.5" class="bp-edge" id="bp-e-2"/>
+          <line x1="490" y1="155" x2="620" y2="195" stroke="var(--text-muted)" stroke-width="1.5" class="bp-edge" id="bp-e-3"/>
+          <line x1="490" y1="235" x2="620" y2="115" stroke="var(--text-muted)" stroke-width="1.5" class="bp-edge" id="bp-e-4"/>
+          <line x1="490" y1="235" x2="620" y2="195" stroke="var(--text-muted)" stroke-width="1.5" class="bp-edge" id="bp-e-5"/>
+          <line x1="620" y1="115" x2="760" y2="155" stroke="var(--text-muted)" stroke-width="1.5" class="bp-edge" id="bp-e-6"/>
+          <line x1="620" y1="195" x2="760" y2="155" stroke="var(--text-muted)" stroke-width="1.5" class="bp-edge" id="bp-e-7"/>
+
+          <!-- Forward signals (green, input→hidden) -->
+          <line x1="490" y1="75"  x2="620" y2="115" stroke="var(--epoch-neuron)" stroke-width="2.5" class="bp-fwd bp-fwd-ih"/>
+          <line x1="490" y1="75"  x2="620" y2="195" stroke="var(--epoch-neuron)" stroke-width="2.5" class="bp-fwd bp-fwd-ih"/>
+          <line x1="490" y1="155" x2="620" y2="115" stroke="var(--epoch-neuron)" stroke-width="2.5" class="bp-fwd bp-fwd-ih"/>
+          <line x1="490" y1="155" x2="620" y2="195" stroke="var(--epoch-neuron)" stroke-width="2.5" class="bp-fwd bp-fwd-ih"/>
+          <line x1="490" y1="235" x2="620" y2="115" stroke="var(--epoch-neuron)" stroke-width="2.5" class="bp-fwd bp-fwd-ih"/>
+          <line x1="490" y1="235" x2="620" y2="195" stroke="var(--epoch-neuron)" stroke-width="2.5" class="bp-fwd bp-fwd-ih"/>
+          <!-- Forward signals (green, hidden→output) -->
+          <line x1="620" y1="115" x2="760" y2="155" stroke="var(--epoch-neuron)" stroke-width="2.5" class="bp-fwd bp-fwd-ho"/>
+          <line x1="620" y1="195" x2="760" y2="155" stroke="var(--epoch-neuron)" stroke-width="2.5" class="bp-fwd bp-fwd-ho"/>
+
+          <!-- Nodes (on top of edges) -->
+          <circle cx="490" cy="75"  r="14" class="bp-node" id="bp-n-i0"/>
+          <circle cx="490" cy="155" r="14" class="bp-node" id="bp-n-i1"/>
+          <circle cx="490" cy="235" r="14" class="bp-node" id="bp-n-i2"/>
+          <circle cx="620" cy="115" r="16" class="bp-node" id="bp-n-h0"/>
+          <circle cx="620" cy="195" r="16" class="bp-node" id="bp-n-h1"/>
+          <circle cx="760" cy="155" r="18" class="bp-node" id="bp-n-o"/>
+
+          <!-- Node labels -->
+          <text x="490" y="79"  fill="var(--text)" font-size="10" text-anchor="middle">к</text>
+          <text x="490" y="159" fill="var(--text)" font-size="10" text-anchor="middle">т</text>
+          <text x="490" y="239" fill="var(--text)" font-size="10" text-anchor="middle">ж</text>
+
+          <!-- Input labels -->
+          <text x="462" y="79"  fill="var(--text-muted)" font-size="11" text-anchor="end">команда</text>
+          <text x="462" y="159" fill="var(--text-muted)" font-size="11" text-anchor="end">тон</text>
+          <text x="462" y="239" fill="var(--text-muted)" font-size="11" text-anchor="end">жест</text>
+
+          <!-- Output label (dynamic) -->
+          <text x="760" y="190" id="bp-net-output" fill="var(--text-muted)" font-size="12" text-anchor="middle"></text>
+        </svg>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:16px; margin:12px 0 16px;">
+        <span style="font-size:15px; color:var(--text-muted);" id="bp-counter">Попытка: <strong style="color:var(--text);">—</strong> / 10</span>
+        <span style="font-size:13px; color:var(--text-muted); margin-left:auto;">loss:</span>
+        <div class="loss-bar-wrap" style="max-width:200px;">
+          <div class="loss-bar-fill" id="bp-loss-bar" style="width:0%;"></div>
+        </div>
+        <span style="font-size:14px; font-weight:600; min-width:36px;" id="bp-loss-val">—</span>
+      </div>
+
+      <div style="text-align:center;">
+        <button class="btn btn-primary" id="btn-attempt" style="border-color:var(--epoch-neuron); color:var(--epoch-neuron);">
+          Следующая попытка →
+        </button>
+        <span style="font-size:12px; color:var(--text-muted); margin-left:12px;">или нажмите Пробел</span>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/static/nav.js"></script>
+  <script src="/static/utils.js"></script>
+  <script src="/static/tooltip.js"></script>
+
+  <script>
+  (function() {
+    // ════════════════════════════════════════════════════════
+    // CARD 1: Brain → Artificial neuron animation
+    // ════════════════════════════════════════════════════════
+    const inputs = [
+      { x: 0.7, w: 0.6 },
+      { x: 0.9, w: 0.8 },
+      { x: 0.3, w: 0.4 },
+    ];
+    const threshold = 1.0;
+    let animating = false;
+
+    function runSignalAnimation() {
+      if (animating) return;
+      animating = true;
+
+      // Reset all
+      document.querySelectorAll('.signal-path').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.soma-glow').forEach(s => s.classList.remove('fired'));
+      document.getElementById('sum-display').textContent = '= ?';
+      document.getElementById('output-text').textContent = '?';
+      document.getElementById('output-circle').setAttribute('stroke', 'var(--text-muted)');
+
+      const delay = window.animDelay ?? 400;
+
+      // Step 1: activate input signals (both sides simultaneously)
+      setTimeout(() => {
+        ['sig-bio-1', 'sig-art-1'].forEach(id => document.getElementById(id).classList.add('active'));
+      }, delay * 0);
+      setTimeout(() => {
+        ['sig-bio-2', 'sig-art-2'].forEach(id => document.getElementById(id).classList.add('active'));
+      }, delay * 1);
+      setTimeout(() => {
+        ['sig-bio-3', 'sig-art-3'].forEach(id => document.getElementById(id).classList.add('active'));
+      }, delay * 2);
+
+      // Step 2: soma fires
+      setTimeout(() => {
+        const sum = inputs.reduce((s, inp) => s + inp.x * inp.w, 0);
+        document.getElementById('sum-display').textContent = '= ' + sum.toFixed(2);
+        const fired = sum >= threshold;
+
+        document.getElementById('soma-bio').classList.toggle('fired', fired);
+        document.getElementById('soma-art').classList.toggle('fired', fired);
+
+        // Step 3: output signal
+        setTimeout(() => {
+          if (fired) {
+            document.getElementById('sig-bio-out').classList.add('active');
+            document.getElementById('sig-art-out').classList.add('active');
+          }
+          document.getElementById('output-text').textContent = fired ? '1' : '0';
+          document.getElementById('output-circle').setAttribute('stroke', fired ? 'var(--epoch-neuron)' : 'var(--epoch-llm)');
+          animating = false;
+        }, delay);
+      }, delay * 3);
+    }
+
+    document.getElementById('btn-signal').addEventListener('click', runSignalAnimation);
+
+    // ════════════════════════════════════════════════════════
+    // CARD 2: Backprop = Dog Training
+    // ════════════════════════════════════════════════════════
+    const attempts = [
+      { cmd: '«Сидеть!»',  action: '*стоит*',       pose: 'stand',  loss: 0.85, feedback: '«Нет!»',     ok: false, fbColor: '#F87171' },
+      { cmd: '«Сидеть!»',  action: '*пригибается*',  pose: 'crouch', loss: 0.62, feedback: '«Нет!»',    ok: false, fbColor: '#F87171' },
+      { cmd: '«Сидеть!»',  action: '*садится*',      pose: 'sit',    loss: 0.08, feedback: '«Молодец!»', ok: true,  fbColor: '#34D399' },
+      { cmd: '«Сидеть!»',  action: '*садится*',      pose: 'sit',    loss: 0.03, feedback: '«Молодец!»', ok: true,  fbColor: '#34D399' },
+      { cmd: '«Лежать!»',  action: '*садится*',      pose: 'sit',    loss: 0.74, feedback: '«Нет!»',     ok: false, fbColor: '#F87171' },
+      { cmd: '«Лежать!»',  action: '*садится*',      pose: 'sit',    loss: 0.51, feedback: '«Нет...»',   ok: false, fbColor: '#F87171' },
+      { cmd: '«Лежать!»',  action: '*ложится*',      pose: 'lie',    loss: 0.06, feedback: '«Молодец!»', ok: true,  fbColor: '#34D399' },
+      { cmd: '«Сидеть!»',  action: '*ложится*',      pose: 'lie',    loss: 0.45, feedback: '«Нет!»',     ok: false, fbColor: '#F87171' },
+      { cmd: '«Сидеть!»',  action: '*садится*',      pose: 'sit',    loss: 0.04, feedback: '«Молодец!»', ok: true,  fbColor: '#34D399' },
+      { cmd: '«Лежать!»',  action: '*ложится*',      pose: 'lie',    loss: 0.01, feedback: '«Молодец!»', ok: true,  fbColor: '#34D399' },
+    ];
+
+    // Edge weights per stage (index 0 = initial, 1..10 = after each attempt)
+    const edgeWeights = [
+      [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
+      [1.7, 1.3, 1.6, 1.4, 1.3, 1.6, 1.6, 1.4],  // 1 ✗
+      [1.9, 1.1, 1.8, 1.2, 1.1, 1.8, 1.8, 1.2],  // 2 ✗
+      [2.0, 1.0, 1.9, 1.1, 1.0, 1.9, 1.9, 1.1],  // 3 ✓
+      [2.0, 1.0, 1.9, 1.1, 1.0, 1.9, 2.0, 1.1],  // 4 ✓
+      [1.8, 1.4, 1.7, 1.5, 1.2, 1.8, 1.7, 1.5],  // 5 ✗ shift
+      [1.6, 1.7, 1.5, 1.8, 1.3, 2.0, 1.4, 1.8],  // 6 ✗
+      [1.5, 1.8, 1.5, 1.9, 1.3, 2.1, 1.4, 1.9],  // 7 ✓
+      [1.7, 1.6, 1.7, 1.7, 1.4, 1.9, 1.6, 1.7],  // 8 ✗ rebalance
+      [1.8, 1.6, 1.8, 1.6, 1.5, 1.9, 1.7, 1.6],  // 9 ✓
+      [1.9, 1.6, 1.8, 1.6, 1.5, 1.9, 1.8, 1.6],  // 10 ✓
+    ];
+
+    let bpAttempt = -1;
+    let bpAnimating = false;
+    let card1Played = false;
+
+    function showDogPose(pose) {
+      document.querySelectorAll('.dog-pose').forEach(g => g.setAttribute('opacity', '0'));
+      const el = document.getElementById('dog-' + pose);
+      if (el) el.setAttribute('opacity', '1');
+    }
+
+    function lossColor(loss) {
+      if (loss > 0.6) return '#F87171';
+      if (loss > 0.3) return '#F97316';
+      if (loss > 0)   return '#FACC15';
+      return '#34D399';
+    }
+
+    function resetBpSignals() {
+      document.querySelectorAll('.bp-fwd').forEach(el => {
+        el.style.transition = 'none';
+        el.classList.remove('active');
+        void el.offsetHeight;
+        el.style.transition = '';
+      });
+      document.querySelectorAll('.bp-node').forEach(el => {
+        el.classList.remove('fwd', 'err', 'ok');
+      });
+      document.querySelectorAll('.bp-edge').forEach(el => {
+        el.classList.remove('backprop');
+      });
+    }
+
+    function setEdgeWeights(stage) {
+      const w = edgeWeights[stage];
+      for (let i = 0; i < 8; i++) {
+        const el = document.getElementById('bp-e-' + i);
+        if (el) el.setAttribute('stroke-width', w[i]);
+      }
+    }
+
+    function advanceAttempt() {
+      if (bpAnimating) return;
+      bpAttempt++;
+      if (bpAttempt >= attempts.length) {
+        resetBpCard();
+        return;
+      }
+      runAttemptAnimation(attempts[bpAttempt]);
+    }
+
+    function runAttemptAnimation(att) {
+      bpAnimating = true;
+      const d = 450;
+
+      resetBpSignals();
+      document.getElementById('bp-command').textContent = att.cmd;
+      document.getElementById('bp-dog-action').textContent = '';
+      document.getElementById('bp-feedback').textContent = '';
+      document.getElementById('bp-net-output').textContent = '';
+
+      // Update counter
+      document.getElementById('bp-counter').innerHTML =
+        'Попытка: <strong style="color:var(--text);">' + (bpAttempt + 1) + '</strong> / ' + attempts.length;
+
+      // Phase 1: Forward — input nodes activate
+      setTimeout(() => {
+        ['bp-n-i0', 'bp-n-i1', 'bp-n-i2'].forEach(id =>
+          document.getElementById(id).classList.add('fwd'));
+      }, d * 0);
+
+      // Phase 2: Forward — input→hidden signals
+      setTimeout(() => {
+        document.querySelectorAll('.bp-fwd-ih').forEach(el => el.classList.add('active'));
+      }, d * 1);
+
+      // Phase 3: Hidden nodes activate + hidden→output signals
+      setTimeout(() => {
+        ['bp-n-h0', 'bp-n-h1'].forEach(id =>
+          document.getElementById(id).classList.add('fwd'));
+        document.querySelectorAll('.bp-fwd-ho').forEach(el => el.classList.add('active'));
+      }, d * 2);
+
+      // Phase 4: Output node + show result + dog pose
+      setTimeout(() => {
+        const outNode = document.getElementById('bp-n-o');
+        outNode.classList.add(att.ok ? 'ok' : 'err');
+
+        showDogPose(att.pose);
+        document.getElementById('bp-dog-action').textContent = att.action;
+        document.getElementById('bp-net-output').textContent = att.action.replace(/[*]/g, '');
+      }, d * 3);
+
+      // Phase 5: Feedback + loss + backprop flash
+      setTimeout(() => {
+        const fbEl = document.getElementById('bp-feedback');
+        fbEl.textContent = att.feedback;
+        fbEl.setAttribute('fill', att.fbColor);
+
+        // Loss bar
+        const pct = Math.round(att.loss * 100);
+        document.getElementById('bp-loss-bar').style.width = pct + '%';
+        document.getElementById('bp-loss-bar').style.background = lossColor(att.loss);
+        document.getElementById('bp-loss-val').textContent = att.loss.toFixed(2);
+
+        if (!att.ok) {
+          // Backprop flash: edges turn orange
+          document.querySelectorAll('.bp-edge').forEach(el => el.classList.add('backprop'));
+        }
+      }, d * 4);
+
+      // Phase 6: Weights update, edges restore
+      setTimeout(() => {
+        document.querySelectorAll('.bp-edge').forEach(el => el.classList.remove('backprop'));
+        setEdgeWeights(bpAttempt + 1);
+
+        // Update button text on last attempt
+        if (bpAttempt >= attempts.length - 1) {
+          document.getElementById('btn-attempt').textContent = 'Сначала';
+        }
+        bpAnimating = false;
+      }, d * 6);
+    }
+
+    function resetBpCard() {
+      bpAttempt = -1;
+      bpAnimating = false;
+      resetBpSignals();
+      setEdgeWeights(0);
+      showDogPose('stand');
+      document.getElementById('bp-command').textContent = '«...»';
+      document.getElementById('bp-dog-action').textContent = '';
+      document.getElementById('bp-feedback').textContent = '';
+      document.getElementById('bp-net-output').textContent = '';
+      document.getElementById('bp-counter').innerHTML =
+        'Попытка: <strong style="color:var(--text);">—</strong> / ' + attempts.length;
+      document.getElementById('bp-loss-bar').style.width = '0%';
+      document.getElementById('bp-loss-val').textContent = '—';
+      document.getElementById('btn-attempt').textContent = 'Следующая попытка →';
+    }
+
+    document.getElementById('btn-attempt').addEventListener('click', advanceAttempt);
+
+    // Unified Space handler: first press → Card 1, then → Card 2
+    document.addEventListener('animate', () => {
+      if (!card1Played) {
+        runSignalAnimation();
+        card1Played = true;
+      } else {
+        advanceAttempt();
+      }
+    });
+
+  })();
+  </script>
+</body>
+</html>

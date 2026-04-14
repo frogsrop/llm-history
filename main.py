@@ -1,8 +1,13 @@
+import logging
+import traceback
+
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pathlib import Path
+
+logging.basicConfig(level=logging.INFO)
 
 # --- Routers are uncommented as steps 4–7 are implemented ---
 from routers import ngram
@@ -11,6 +16,13 @@ from routers import embeddings
 from routers import llm_era
 
 app = FastAPI(title="LLM Evolution Explainer")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    tb_str = traceback.format_exception(type(exc), exc, exc.__traceback__)
+    logging.error(f"Unhandled exception on {request.url}:\n{''.join(tb_str)}")
+    return JSONResponse(status_code=500, content={"error": str(exc)})
 
 
 @app.on_event("startup")
@@ -46,14 +58,19 @@ async def module_training(request: Request):
     return templates.TemplateResponse("module-1b-training.html", {"request": request})
 
 
+@app.get("/module/1c", response_class=HTMLResponse)
+async def module_neuron(request: Request):
+    return templates.TemplateResponse("module-1c-neuron.html", {"request": request})
+
+
 @app.get("/module/2", response_class=HTMLResponse)
-async def module_rnn(request: Request):
-    return templates.TemplateResponse("module-2-rnn-lstm.html", {"request": request})
+async def module_embeddings(request: Request):
+    return templates.TemplateResponse("module-2-embeddings.html", {"request": request})
 
 
 @app.get("/module/3", response_class=HTMLResponse)
-async def module_embeddings(request: Request):
-    return templates.TemplateResponse("module-3-embeddings.html", {"request": request})
+async def module_rnn(request: Request):
+    return templates.TemplateResponse("module-3-rnn-lstm.html", {"request": request})
 
 
 @app.get("/module/4", response_class=HTMLResponse)

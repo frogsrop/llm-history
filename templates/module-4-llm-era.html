@@ -87,6 +87,63 @@
       text-align: center;
     }
 
+    /* ── Preset buttons ───────────────────────────────── */
+    .preset-btn {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .preset-btn:hover { border-color: var(--epoch-llm); color: var(--text); }
+    .preset-btn.active {
+      border-color: var(--epoch-llm);
+      background: rgba(248,113,113,0.12);
+      color: var(--text);
+    }
+
+    /* ── Model loading bar ────────────────────────────── */
+    .model-loading-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .model-loading-bar.hidden { display: none; }
+    .model-loading-track {
+      flex: 1;
+      height: 6px;
+      background: var(--bg);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .model-loading-fill {
+      height: 100%;
+      background: var(--epoch-llm);
+      border-radius: 3px;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+    .model-loading-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .model-loading-pct {
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 600;
+      min-width: 36px;
+      text-align: right;
+    }
+
     /* ── Generation result ───────────────────────────── */
     .gen-result {
       background: var(--bg);
@@ -131,7 +188,16 @@
     <h1 class="section-title">
       <span class="epoch-bar epoch-llm"></span>LLM-эра
     </h1>
-    <p class="section-sub">2017–н.в. — Seq2Seq, Attention, Transformer, масштаб</p>
+    <p class="section-sub">2017–н.в. — Seq2Seq, Attention, масштаб</p>
+
+    <!-- Model loading progress -->
+    <div id="model-loading-bar" class="model-loading-bar">
+      <span class="model-loading-text" id="model-loading-text">YandexGPT 5 Lite 8B: загрузка…</span>
+      <div class="model-loading-track">
+        <div class="model-loading-fill" id="model-loading-fill"></div>
+      </div>
+      <span class="model-loading-pct" id="model-loading-pct">0%</span>
+    </div>
 
     <!-- Corpus -->
     <div class="card">
@@ -156,7 +222,7 @@
         </span>
       </div>
       <p style="color:var(--text-muted); margin-bottom:12px;">
-        Вся информация сжимается в один вектор — <strong>bottleneck</strong>. Длинные предложения теряют начало.
+        Вся информация сжимается в один вектор — <strong>узкое место</strong>. Длинные предложения теряют начало.
       </p>
 
       <div class="seq2seq-wrap">
@@ -171,7 +237,7 @@
 
           <!-- Bottleneck -->
           <circle cx="350" cy="90" r="8" fill="#F87171" class="bottleneck-dot"/>
-          <text x="350" y="120" fill="#F87171" font-size="11" text-anchor="middle" font-weight="600">bottleneck</text>
+          <text x="350" y="120" fill="#F87171" font-size="11" text-anchor="middle" font-weight="600">узкое место</text>
           <text x="350" y="135" fill="#8b949e" font-size="10" text-anchor="middle">(один вектор)</text>
 
           <!-- Flow arrows: bottleneck → decoder -->
@@ -192,8 +258,8 @@
       <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
         <div style="font-size:14px; font-weight:600; margin-bottom:8px;">Попробуйте сами</div>
         <p style="font-size:13px; color:var(--text-muted); margin-bottom:10px;">
-          LSTM Seq2Seq, обученная на нашем корпусе. Пишете слово — encoder сжимает его в один вектор (64 числа) —
-          decoder пытается предсказать продолжение только из этого вектора.
+          Seq2Seq модель, обученная на нашем корпусе. Пишете слово — кодировщик сжимает его в один вектор (64 числа) —
+          декодер пытается предсказать продолжение только из этого вектора.
         </p>
 
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
@@ -235,7 +301,7 @@
     </div>
 
     <p style="font-size:12px; color:var(--text-muted); margin-bottom:24px;">
-      Каждый тумблер добавляет новый блок. Transformer объясняется устно (параллельность, multi-head).
+      Каждый тумблер добавляет новый блок.
     </p>
 
     <!-- ═══════════════════════════════════════════════════
@@ -251,8 +317,8 @@
           </span>
         </div>
         <p style="color:var(--text-muted); margin-bottom:12px;">
-          Реальная матрица весов внимания из Qwen2.5-7B.
-          GPT — каузальная модель: каждое слово видит только <strong>предыдущие</strong> (левый нижний треугольник).
+          Реальная матрица весов внимания из YandexGPT 5 Lite 8B.
+          Каждое слово видит только <strong>предыдущие</strong> — поэтому заполнен только левый нижний треугольник.
         </p>
 
         <div style="margin-bottom:12px;">
@@ -262,21 +328,29 @@
             style="margin-left:8px; background:var(--bg); border:1px solid var(--border);
             border-radius:var(--radius); color:var(--text); padding:6px 12px; font-size:14px;
             width:100%; max-width:500px; outline:none;">
-          <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;" id="attn-examples"></div>
+          <div style="margin-top:8px;">
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Предложения:</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;" id="attn-examples"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Интересные паттерны:</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;" id="attn-presets"></div>
         </div>
 
         <div class="slider-wrap">
           <span class="slider-label">Слой</span>
-          <input type="range" id="attn-layer" min="0" max="36" step="1" value="36">
-          <span class="slider-value" id="attn-layer-value">36</span>
+          <input type="range" id="attn-layer" min="0" max="32" step="1" value="32">
+          <span class="slider-value" id="attn-layer-value">32</span>
           <span class="term" style="margin-left:4px;">
-            <button class="hint-btn" data-hint="0 = среднее по всем слоям. Ранние слои (1–12) видят грамматику: соседние слова, пунктуацию. Средние (13–24) — смысловые связи. Поздние (25–36) — абстрактные паттерны.">?</button>
+            <button class="hint-btn" data-hint="0 = среднее по всем слоям. Ранние слои (1–11) видят грамматику: соседние слова, пунктуацию. Средние (12–22) — смысловые связи. Поздние (23–32) — абстрактные паттерны.">?</button>
           </span>
         </div>
 
         <div class="slider-wrap">
           <span class="slider-label">Голова</span>
-          <input type="range" id="attn-head" min="0" max="16" step="1" value="0">
+          <input type="range" id="attn-head" min="0" max="32" step="1" value="0">
           <span class="slider-value" id="attn-head-value">avg</span>
           <span class="term" style="margin-left:4px;">
             <button class="hint-btn" data-hint="0 = среднее по всем головам. Каждая голова учится видеть разные связи: одна — грамматику (подлежащее→сказуемое), другая — соседние слова, третья — дальние зависимости.">?</button>
@@ -288,7 +362,7 @@
         <div class="heatmap-wrap">
           <canvas id="heatmap-canvas"></canvas>
         </div>
-        <div class="heatmap-label">Яркость = сила внимания (строка → столбец). GPT каузальный: каждый токен видит только предыдущие.</div>
+        <div class="heatmap-label">Яркость = сила внимания (строка → столбец). Каждый токен видит только предыдущие.</div>
       </div>
     </div>
 
@@ -330,9 +404,9 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Генерация: Qwen 2.5 7B</div>
+        <div class="card-title">Генерация: YandexGPT 5 Lite 8B</div>
         <p style="color:var(--text-muted); margin-bottom:12px;">
-          Реальная генерация текста моделью Qwen 2.5 7B (~7B параметров, 4-bit).
+          Реальная генерация текста моделью YandexGPT 5 Lite 8B (~8 миллиардов параметров).
           Модель дополняет начало предложения. Введите любой текст на русском языке.
         </p>
 
@@ -365,26 +439,6 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════
-         Transformer callout
-         ═══════════════════════════════════════════════════ -->
-    <div class="card" style="margin-top:24px;">
-      <div class="card-title">
-        Transformer (2017)
-        <span class="term">
-          <button class="hint-btn" data-hint="Transformer — как группа переводчиков, которые все одновременно читают текст и обсуждают его между собой, вместо одного человека, читающего слово за словом.">?</button>
-        </span>
-      </div>
-      <p style="color:var(--text-muted);">
-        Объясняется устно. Ключевые идеи:
-      </p>
-      <ul style="color:var(--text-muted); margin:8px 0 0 20px; font-size:14px; line-height:1.8;">
-        <li><strong style="color:var(--text);">Параллельность</strong> — все токены обрабатываются одновременно, а не последовательно как в RNN</li>
-        <li><strong style="color:var(--text);">Multi-head attention</strong> — несколько «голов» внимания, каждая смотрит на разные связи между словами</li>
-        <li><strong style="color:var(--text);">Все видят всех</strong> — каждое слово напрямую связано с каждым, без потери информации на расстоянии</li>
-      </ul>
-    </div>
-
   </main>
 
   <script src="/static/nav.js"></script>
@@ -402,6 +456,38 @@
     const resetBtn       = document.getElementById('reset-toggles');
     const attnSection    = document.getElementById('attention-section');
     const scaleSection   = document.getElementById('scale-section');
+
+    // ── Model loading progress bar ────────────────────
+    (function pollModelStatus() {
+      const bar     = document.getElementById('model-loading-bar');
+      const fill    = document.getElementById('model-loading-fill');
+      const text    = document.getElementById('model-loading-text');
+      const pctEl   = document.getElementById('model-loading-pct');
+      let done = false;
+
+      async function tick() {
+        if (done) return;
+        try {
+          const r = await fetch('/api/llm-era/status');
+          const d = await r.json();
+          if (d.ready) {
+            fill.style.width = '100%';
+            text.textContent = 'YandexGPT 5 Lite 8B: готово';
+            pctEl.textContent = '100%';
+            done = true;
+            setTimeout(() => { bar.classList.add('hidden'); }, 1500);
+            return;
+          }
+          const pct = d.loading_pct || 0;
+          const stage = d.loading_stage || 'ожидание…';
+          fill.style.width = pct + '%';
+          text.textContent = 'YandexGPT 5 Lite 8B: ' + stage;
+          pctEl.textContent = pct + '%';
+        } catch(e) {}
+        setTimeout(tick, 2000);
+      }
+      tick();
+    })();
 
     // Corpus sentences (same as corpus.py)
     const SENTENCES = [
@@ -424,6 +510,12 @@
         '<span class="corpus-sentence">' + escapeHtml(s) + '</span>'
       ).join('');
     }
+
+    // Slider references (shared between populateDropdowns and event listeners)
+    const attnLayerSlider = document.getElementById('attn-layer');
+    const attnLayerValue = document.getElementById('attn-layer-value');
+    const attnHeadSlider = document.getElementById('attn-head');
+    const attnHeadValue = document.getElementById('attn-head-value');
 
     function populateDropdowns() {
       const genInput = document.getElementById('gen-prompt');
@@ -455,19 +547,95 @@
         demoEl.appendChild(btn);
       });
 
-      // Attention example buttons
+      // ── Attention presets: sentences + interesting layer/head combos ──
+      // Each sentence has curated presets showing different attention patterns
+      const ATTN_PRESETS = {
+        'кот сидел у окна и смотрел на дождь': [
+          { label: '🔍 кто действует',   layer: 8,  head: 2,  tip: 'Все глаголы смотрят на «кот»' },
+          { label: '🔗 глагол→место',    layer: 12, head: 3,  tip: 'сидел→окна, смотрел→дождь' },
+          { label: '⬜ каждый за себя',   layer: 17, head: 13, tip: 'Диагональ: слово видит только себя' },
+          { label: '📊 среднее',          layer: 0,  head: 0,  tip: 'Усреднённое по всем головам и слоям' },
+        ],
+        'дождь барабанил по крыше и кот дремал': [
+          { label: '🔍 два субъекта',     layer: 13, head: 9,  tip: '«дождь» и «кот» связаны' },
+          { label: '🎯 фокус на «кот»',   layer: 16, head: 23, tip: 'Один столбец горит ярко' },
+          { label: '⏩ предыдущее слово', layer: 11, head: 6,  tip: 'Каждый токен смотрит на соседа слева' },
+          { label: '📊 среднее',          layer: 0,  head: 0,  tip: 'Усреднённое по всем головам и слоям' },
+        ],
+        'дождь прошёл и кот прыгнул на окно': [
+          { label: '🔗 и→результат',      layer: 13, head: 3,  tip: '«и» смотрит на «прыгнул»' },
+          { label: '🔍 кто действует',    layer: 8,  head: 2,  tip: 'Глаголы → подлежащее' },
+          { label: '🎯 фокус на «кот»',   layer: 16, head: 23, tip: 'Subject tracking' },
+          { label: '📊 среднее',          layer: 0,  head: 0,  tip: 'Усреднённое по всем головам и слоям' },
+        ],
+        'на окне кот смотрел на улицу и щурился': [
+          { label: '🔗 глагол→место',     layer: 12, head: 3,  tip: 'смотрел→улицу' },
+          { label: '🔗 и→результат',      layer: 13, head: 3,  tip: '«и» смотрит на «щурился»' },
+          { label: '🔍 кто действует',    layer: 13, head: 32, tip: 'Всё ведёт к «кот»' },
+          { label: '📊 среднее',          layer: 0,  head: 0,  tip: 'Усреднённое по всем головам и слоям' },
+        ],
+        'солнце вышло и кот лёг на тёплую крышу': [
+          { label: '🔍 два субъекта',     layer: 13, head: 9,  tip: '«солнце» ↔ «кот»' },
+          { label: '🔗 и→результат',      layer: 13, head: 3,  tip: '«и» → «лёг»' },
+          { label: '🎯 фокус на «кот»',   layer: 16, head: 23, tip: 'Subject tracking' },
+          { label: '📊 среднее',          layer: 0,  head: 0,  tip: 'Усреднённое по всем головам и слоям' },
+        ],
+      };
+      // Default presets for sentences without curated combos
+      const DEFAULT_PRESETS = [
+        { label: '🔍 кто действует',  layer: 8,  head: 2,  tip: 'Subject tracking' },
+        { label: '🔗 глагол→место',   layer: 12, head: 3,  tip: 'Verb→object' },
+        { label: '⬜ каждый за себя',  layer: 17, head: 13, tip: 'Self-attention diagonal' },
+        { label: '📊 среднее',         layer: 0,  head: 0,  tip: 'Усреднённое' },
+      ];
+
       const examplesEl = document.getElementById('attn-examples');
-      SENTENCES.slice(0, 5).forEach(s => {
+      const presetsEl = document.getElementById('attn-presets');
+      const sentenceInput = document.getElementById('attn-sentence');
+      const attnSentences = Object.keys(ATTN_PRESETS);
+
+      function renderPresets() {
+        const sent = sentenceInput.value.trim();
+        const presets = ATTN_PRESETS[sent] || DEFAULT_PRESETS;
+        presetsEl.innerHTML = '';
+        presets.forEach(p => {
+          const btn = document.createElement('button');
+          btn.className = 'preset-btn';
+          btn.textContent = p.label;
+          btn.title = p.tip;
+          btn.addEventListener('click', () => {
+            attnLayerSlider.value = p.layer;
+            attnLayerValue.textContent = p.layer === 0 ? 'avg' : p.layer;
+            attnHeadSlider.value = p.head;
+            attnHeadValue.textContent = p.head === 0 ? 'avg' : p.head;
+            // Highlight active preset
+            presetsEl.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (attentionEnabled) loadAttention();
+          });
+          presetsEl.appendChild(btn);
+        });
+      }
+
+      // Sentence example buttons
+      attnSentences.forEach(s => {
         const btn = document.createElement('button');
-        btn.className = 'btn';
-        btn.style.cssText = 'font-size:11px; padding:3px 8px;';
-        btn.textContent = s.length > 30 ? s.slice(0, 28) + '...' : s;
+        btn.className = 'preset-btn';
+        btn.textContent = s.length > 35 ? s.slice(0, 33) + '…' : s;
         btn.addEventListener('click', () => {
-          document.getElementById('attn-sentence').value = s;
+          sentenceInput.value = s;
+          // Deactivate other sentence buttons
+          examplesEl.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderPresets();
           if (attentionEnabled) loadAttention();
         });
         examplesEl.appendChild(btn);
       });
+
+      // Re-render presets when input changes manually
+      sentenceInput.addEventListener('input', () => renderPresets());
+      renderPresets();
     }
     populateDropdowns();
 
@@ -557,9 +725,7 @@
     const heatmapCanvas = document.getElementById('heatmap-canvas');
     const heatmapCtx = heatmapCanvas.getContext('2d');
 
-    // Layer slider
-    const attnLayerSlider = document.getElementById('attn-layer');
-    const attnLayerValue = document.getElementById('attn-layer-value');
+    // Layer slider (declared earlier, used by presets)
     attnLayerSlider.addEventListener('input', () => {
       const v = parseInt(attnLayerSlider.value);
       attnLayerValue.textContent = v === 0 ? 'avg' : v;
@@ -568,9 +734,7 @@
       if (attentionEnabled) loadAttention();
     });
 
-    // Head slider
-    const attnHeadSlider = document.getElementById('attn-head');
-    const attnHeadValue = document.getElementById('attn-head-value');
+    // Head slider (declared earlier, used by presets)
     attnHeadSlider.addEventListener('input', () => {
       const v = parseInt(attnHeadSlider.value);
       attnHeadValue.textContent = v === 0 ? 'avg' : v;

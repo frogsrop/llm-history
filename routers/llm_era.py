@@ -3,12 +3,12 @@ routers/llm_era.py — LLM-era module.
 
 1. TinySeq2Seq: LSTM encoder-decoder trained on the corpus (CPU, fast).
    Shows the bottleneck problem: all info compressed to one vector.
-2. Qwen2.5-3B: real attention heatmap + text generation.
+2. YandexGPT-5-Lite-8B: real attention heatmap + text generation (4-bit via bitsandbytes).
 
 Endpoints:
   GET  /api/llm-era/status              → model loading status
   GET  /api/llm-era/seq2seq/generate    → Seq2Seq generation (encoder→bottleneck→decoder)
-  GET  /api/llm-era/attention?sentence=&layer=&head= → attention weights (per-head or averaged, from Qwen2.5-3B)
+  GET  /api/llm-era/attention?sentence=&layer=&head= → attention weights (per-head or averaged, from YandexGPT-5-Lite-8B)
   POST /api/llm-era/generate            → text generation with temperature control
 """
 
@@ -26,7 +26,7 @@ from corpus import SENTENCES
 
 router = APIRouter()
 
-# Few-shot prefix to prime Qwen2.5-3B into sentence-completion mode.
+# Few-shot prefix to prime YandexGPT-5-Lite-8B into sentence-completion mode.
 # Examples use longer continuations (finish sentence + one more) and avoid
 # domain-specific words (пушка/пистолет) so the model isn't primed on them.
 _FEW_SHOT_PREFIX = (
@@ -171,7 +171,7 @@ def _train_seq2seq():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Qwen2.5-7B-AWQ — text generation + attention (4-bit quantized)
+# YandexGPT-5-Lite-8B — text generation + attention (4-bit via bitsandbytes)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _tokenizer = None
@@ -180,32 +180,58 @@ _device = None
 _n_heads = 0
 _n_layers = 0
 _model_ready = threading.Event()
+_loading_stage = ""
+_loading_pct = 0
 
-_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct-AWQ"
-_CACHE_DIR = str(_MODELS_DIR / "qwen2.5-7b-awq")
+_MODEL_ID = "yandex/YandexGPT-5-Lite-8B-pretrain"
+_CACHE_DIR = str(_MODELS_DIR / "yandexgpt-5-lite-8b")
 
 
 def _load_model():
     global _tokenizer, _model, _device, _n_heads, _n_layers
+    global _loading_stage, _loading_pct
     try:
-        from transformers import AutoTokenizer, AutoModelForCausalLM
+        from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 
         _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        print(f"[LLM-era] Loading {_MODEL_ID} on {_device}...", flush=True)
+        _loading_stage = "Загрузка токенизатора"
+        _loading_pct = 5
+        print(f"[LLM-era] Loading {_MODEL_ID} on {_device} (4-bit)...", flush=True)
         _tokenizer = AutoTokenizer.from_pretrained(_MODEL_ID, cache_dir=_CACHE_DIR)
+
+        _loading_stage = "Загрузка весов модели"
+        _loading_pct = 15
+        print("[LLM-era] Tokenizer loaded. Loading model weights...", flush=True)
+
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_quant_type="nf4",
+        )
         _model = AutoModelForCausalLM.from_pretrained(
             _MODEL_ID,
             cache_dir=_CACHE_DIR,
-            torch_dtype=torch.float16,
+            quantization_config=bnb_config,
+            device_map="auto",
+            attn_implementation="eager",
         )
-        _model.to(_device)
+
+        _loading_stage = "Инициализация"
+        _loading_pct = 90
+        print("[LLM-era] Weights loaded. Initializing...", flush=True)
+
         _model.eval()
         _n_heads = _model.config.num_attention_heads
         _n_layers = _model.config.num_hidden_layers
+
+        _loading_stage = "Готово"
+        _loading_pct = 100
         _model_ready.set()
         print(f"[LLM-era] Model ready on {_device} ({_n_layers} layers, {_n_heads} heads).", flush=True)
     except Exception as e:
+        _loading_stage = f"Ошибка: {e}"
+        _loading_pct = 0
         print(f"[LLM-era] Failed to load model: {e}", flush=True)
 
 
@@ -229,6 +255,8 @@ def llm_status():
     return {
         "ready": _model_ready.is_set(),
         "seq2seq_ready": _seq2seq_ready.is_set(),
+        "loading_stage": _loading_stage,
+        "loading_pct": _loading_pct,
     }
 
 
@@ -273,10 +301,9 @@ def seq2seq_vocab():
 
 @router.get("/attention")
 def llm_attention(sentence: str = "", layer: int = -1, head: int = 0):
-    """Attention heatmap from Qwen2.5-3B (causal, autoregressive).
+    """Attention heatmap from YandexGPT-5-Lite-8B (causal, autoregressive).
     - layer: 1-based (default: last layer). 0 = average across all layers.
-    - head:  1-based specific head. 0 = average across all heads in the layer.
-    Qwen2.5 uses SentencePiece tokenizer with native Unicode support."""
+    - head:  1-based specific head. 0 = average across all heads in the layer."""
     if not _model_ready.is_set():
         return {"error": "Model is still loading, please wait", "tokens": [], "weights": []}
 
@@ -288,40 +315,46 @@ def llm_attention(sentence: str = "", layer: int = -1, head: int = 0):
     layer = max(0, min(_n_layers, layer))
     head = max(0, min(_n_heads, head))
 
-    inputs = _tokenizer(sentence, return_tensors="pt", max_length=128, truncation=True).to(_device)
-    with torch.no_grad():
-        outputs = _model(**inputs, output_attentions=True)
+    try:
+        inputs = _tokenizer(sentence, return_tensors="pt", max_length=128, truncation=True).to(_device)
+        with torch.no_grad():
+            outputs = _model(**inputs, output_attentions=True)
 
-    # outputs.attentions: tuple of (batch, n_heads, seq_len, seq_len) per layer
-    if layer == 0:
-        # Average across all layers
-        stacked = torch.stack(outputs.attentions)  # (n_layers, batch, n_heads, seq, seq)
-        attn = stacked.mean(dim=0)[0]  # (n_heads, seq, seq)
-    else:
-        attn = outputs.attentions[layer - 1][0]  # (n_heads, seq, seq)
+        # outputs.attentions: tuple of (batch, n_heads, seq_len, seq_len) per layer
+        if layer == 0:
+            # Average across all layers
+            stacked = torch.stack(outputs.attentions)  # (n_layers, batch, n_heads, seq, seq)
+            attn = stacked.mean(dim=0)[0]  # (n_heads, seq, seq)
+        else:
+            attn = outputs.attentions[layer - 1][0]  # (n_heads, seq, seq)
 
-    if head == 0:
-        # Average across all heads
-        weights_tensor = attn.mean(dim=0)  # (seq, seq)
-    else:
-        weights_tensor = attn[head - 1]  # (seq, seq)
+        if head == 0:
+            # Average across all heads
+            weights_tensor = attn.mean(dim=0)  # (seq, seq)
+        else:
+            weights_tensor = attn[head - 1]  # (seq, seq)
 
-    # Decode each token individually for clean display.
-    token_ids = inputs["input_ids"][0].tolist()
-    display_tokens = [_tokenizer.decode([tid]).strip() for tid in token_ids]
+        # Decode each token individually for clean display.
+        token_ids = inputs["input_ids"][0].tolist()
+        display_tokens = [_tokenizer.decode([tid]).strip() for tid in token_ids]
 
-    weights = weights_tensor.cpu().tolist()
+        weights_tensor = torch.nan_to_num(weights_tensor, nan=0.0)
+        weights = weights_tensor.cpu().tolist()
 
-    return {
-        "tokens": display_tokens,
-        "weights": weights,
-        "model": "Qwen2.5-3B",
-        "causal": True,
-        "layer": layer,
-        "total_layers": _n_layers,
-        "head": head,
-        "total_heads": _n_heads,
-    }
+        return {
+            "tokens": display_tokens,
+            "weights": weights,
+            "model": "YandexGPT-5-Lite-8B",
+            "causal": True,
+            "layer": layer,
+            "total_layers": _n_layers,
+            "head": head,
+            "total_heads": _n_heads,
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e), "tokens": [], "weights": []}
 
 
 @router.post("/generate")
