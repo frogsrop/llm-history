@@ -6,8 +6,8 @@
   <link rel="stylesheet" href="/static/style.css">
   <style>
     /* ── Brain-neuron SVG ────────────────────────────── */
-    .neuron-svg-wrap { margin: 16px 0; text-align: center; overflow-x: auto; }
-    #brain-neuron-svg { max-width: 860px; width: 100%; }
+    .neuron-svg-wrap { margin: 20px 0; text-align: center; overflow-x: auto; }
+    #brain-neuron-svg { max-width: 1100px; width: 100%; }
 
     .signal-path {
       stroke-dasharray: 8 6;
@@ -22,11 +22,11 @@
       filter: drop-shadow(0 0 12px var(--epoch-neuron));
     }
 
-    .label-bio { fill: var(--text-muted); font-size: 11px; }
-    .label-math { fill: var(--epoch-neuron); font-size: 12px; font-weight: 600; }
+    .label-bio { fill: var(--text-muted); font-size: 13px; }
+    .label-math { fill: var(--epoch-neuron); font-size: 14px; font-weight: 600; }
 
     /* ── Backprop card ──────────────────────────────── */
-    #bp-svg { max-width: 860px; width: 100%; }
+    #bp-svg { max-width: 1100px; width: 100%; }
 
     .bp-fwd {
       stroke-dasharray: 8 6;
@@ -67,14 +67,14 @@
 
     .loss-bar-wrap {
       background: var(--border);
-      border-radius: 4px;
-      height: 8px;
+      border-radius: 6px;
+      height: 10px;
       overflow: hidden;
       flex: 1;
     }
     .loss-bar-fill {
       height: 100%;
-      border-radius: 4px;
+      border-radius: 6px;
       transition: width 0.6s ease, background 0.6s ease;
     }
 
@@ -101,7 +101,7 @@
     <div class="card">
       <div class="card-title">
         Мозг → Искусственный нейрон
-        <span class="term" style="margin-left:8px; font-size:14px; font-weight:400; color:var(--text-muted);">
+        <span class="term" style="margin-left:8px; font-size:var(--fs-sm); font-weight:400; color:var(--text-muted);">
           <button class="hint-btn" data-hint="В 1943 году МакКаллок и Питтс предложили математическую модель нейрона. Идея проста: если сумма входных сигналов превышает порог — нейрон срабатывает.">?</button>
         </span>
       </div>
@@ -216,10 +216,10 @@
       </div>
 
       <div style="text-align:center;">
-        <button class="btn btn-primary" id="btn-signal" style="border-color:var(--epoch-neuron); color:var(--epoch-neuron);">
+        <button class="btn btn-primary" id="btn-signal" style="background:var(--epoch-neuron); border-color:var(--epoch-neuron); color:#0d1117;">
           Показать сигналы
         </button>
-        <span style="font-size:12px; color:var(--text-muted); margin-left:12px;">или нажмите Пробел</span>
+        <span style="font-size:var(--fs-xs); color:var(--text-muted); margin-left:12px;">или нажмите Пробел</span>
       </div>
     </div>
 
@@ -229,7 +229,7 @@
     <div class="card">
       <div class="card-title">
         Обучение = дрессировка
-        <span class="term" style="margin-left:8px; font-size:14px; font-weight:400; color:var(--text-muted);">
+        <span class="term" style="margin-left:8px; font-size:var(--fs-sm); font-weight:400; color:var(--text-muted);">
           <button class="hint-btn" data-hint="Backpropagation (обратное распространение ошибки) — алгоритм обучения нейросети. Сеть делает предсказание, сравнивает с правильным ответом, и корректирует все веса от выхода к входу. Как дрессировка: собака пробует — получает обратную связь — корректирует поведение.">?</button>
         </span>
       </div>
@@ -311,20 +311,20 @@
         </svg>
       </div>
 
-      <div style="display:flex; align-items:center; gap:16px; margin:12px 0 16px;">
-        <span style="font-size:15px; color:var(--text-muted);" id="bp-counter">Попытка: <strong style="color:var(--text);">—</strong> / 10</span>
-        <span style="font-size:13px; color:var(--text-muted); margin-left:auto;">loss:</span>
-        <div class="loss-bar-wrap" style="max-width:200px;">
+      <div style="display:flex; align-items:center; gap:20px; margin:16px 0 20px;">
+        <span style="font-size:var(--fs-sm); color:var(--text-muted);" id="bp-counter">Попытка: <strong style="color:var(--text);">—</strong> / 10</span>
+        <span style="font-size:var(--fs-xs); color:var(--text-muted); margin-left:auto;">loss:</span>
+        <div class="loss-bar-wrap" style="max-width:240px;">
           <div class="loss-bar-fill" id="bp-loss-bar" style="width:0%;"></div>
         </div>
-        <span style="font-size:14px; font-weight:600; min-width:36px;" id="bp-loss-val">—</span>
+        <span style="font-size:var(--fs-sm); font-weight:600; min-width:36px;" id="bp-loss-val">—</span>
       </div>
 
       <div style="text-align:center;">
-        <button class="btn btn-primary" id="btn-attempt" style="border-color:var(--epoch-neuron); color:var(--epoch-neuron);">
+        <button class="btn btn-primary" id="btn-attempt" style="background:var(--epoch-neuron); border-color:var(--epoch-neuron); color:#0d1117;">
           Следующая попытка →
         </button>
-        <span style="font-size:12px; color:var(--text-muted); margin-left:12px;">или нажмите Пробел</span>
+        <span style="font-size:var(--fs-xs); color:var(--text-muted); margin-left:12px;">или нажмите Пробел</span>
       </div>
     </div>
 

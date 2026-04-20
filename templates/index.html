@@ -9,16 +9,16 @@
     /* ── Timeline ─────────────────────────────────────────── */
     .timeline-wrap {
       position: relative;
-      padding: 56px 0 48px;
-      margin: 32px 0 40px;
+      padding: 64px 0 56px;
+      margin: 36px 0 44px;
       overflow: visible;
     }
 
     .timeline-line {
       position: absolute;
-      top: 56px;
+      top: 64px;
       left: 0; right: 0;
-      height: 2px;
+      height: 3px;
       background: var(--border);
     }
 
@@ -38,7 +38,7 @@
     }
 
     .timeline-dot {
-      width: 18px; height: 18px;
+      width: 24px; height: 24px;
       border-radius: 50%;
       border: 3px solid var(--bg-card);
       transition: transform 0.18s ease, box-shadow 0.18s ease;
@@ -49,36 +49,36 @@
     .timeline-event:hover .timeline-dot,
     .timeline-event.open .timeline-dot {
       transform: scale(1.35);
-      box-shadow: 0 0 0 5px rgba(255,255,255,0.08);
+      box-shadow: 0 0 0 6px rgba(255,255,255,0.08);
     }
 
     .timeline-year {
-      font-size: 12px;
+      font-size: var(--fs-xs);
       font-weight: 600;
       color: var(--text-muted);
-      margin-top: 10px;
+      margin-top: 12px;
       white-space: nowrap;
     }
 
     .timeline-label {
-      font-size: 13px;
+      font-size: var(--fs-sm);
       font-weight: 600;
       text-align: center;
-      margin-bottom: 14px;
-      max-width: 120px;
+      margin-bottom: 16px;
+      max-width: 160px;
     }
 
     .timeline-popup {
       display: none;
       position: absolute;
-      top: 38px;
+      top: 44px;
       left: 50%;
       transform: translateX(-50%);
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 16px 18px;
-      width: 220px;
+      padding: 20px 22px;
+      width: 280px;
       z-index: 300;
       box-shadow: 0 8px 32px rgba(0,0,0,0.55);
     }
@@ -87,21 +87,21 @@
       animation: fadeIn 0.18s ease;
     }
     .timeline-popup-title {
-      font-size: 14px;
+      font-size: var(--fs-base);
       font-weight: 700;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
     .timeline-popup-desc {
-      font-size: 13px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
       line-height: 1.5;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
     .timeline-popup-btn {
       display: inline-block;
-      padding: 6px 14px;
+      padding: 8px 18px;
       border-radius: var(--radius);
-      font-size: 13px;
+      font-size: var(--fs-sm);
       font-weight: 600;
       text-decoration: none;
       color: #0d1117;
@@ -116,16 +116,16 @@
     /* ── Module grid ──────────────────────────────────────── */
     .module-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-      margin-top: 8px;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 20px;
+      margin-top: 12px;
     }
 
     .module-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 20px 22px;
+      padding: 24px 26px;
       text-decoration: none;
       color: var(--text);
       transition: border-color 0.18s, background 0.18s;
@@ -135,26 +135,26 @@
     .module-card:hover { border-color: var(--accent); background: var(--bg-hover); }
 
     .module-card-epoch {
-      font-size: 11px;
+      font-size: var(--fs-xs);
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .module-card-title {
-      font-size: 17px;
-      font-weight: 600;
-      margin-bottom: 6px;
+      font-size: var(--fs-lg);
+      font-weight: 700;
+      margin-bottom: 8px;
     }
     .module-card-desc {
-      font-size: 13px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
       line-height: 1.5;
     }
     .module-card-done-badge {
       position: absolute;
-      top: 16px; right: 16px;
-      width: 10px; height: 10px;
+      top: 18px; right: 18px;
+      width: 14px; height: 14px;
       border-radius: 50%;
       background: #3fb950;
       display: none;
@@ -165,23 +165,23 @@
 
     /* ── Progress section ─────────────────────────────────── */
     .progress-section {
-      margin-bottom: 36px;
+      margin-bottom: 40px;
     }
     .progress-section-label {
-      font-size: 14px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
     .progress-bar-wrap {
       background: var(--border);
-      border-radius: 4px;
-      height: 8px;
+      border-radius: 5px;
+      height: 10px;
       overflow: hidden;
     }
     .progress-bar-fill {
       height: 100%;
       background: linear-gradient(90deg, var(--epoch-ngram), var(--epoch-rnn), var(--epoch-embeddings), var(--epoch-llm));
-      border-radius: 4px;
+      border-radius: 5px;
       transition: width 0.5s ease;
     }
   </style>
@@ -195,9 +195,9 @@
 
     <!-- Progress bar -->
     <div class="progress-section">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
         <div class="progress-section-label" id="progress-label" style="margin-bottom:0;">Изучено 0 из 5 модулей</div>
-        <button id="reset-btn" class="btn" style="font-size:12px; padding:5px 12px; color:var(--text-muted);" title="Сбросить прогресс">Сбросить</button>
+        <button id="reset-btn" class="btn" style="font-size:var(--fs-xs); padding:8px 16px; color:var(--text-muted);" title="Сбросить прогресс">Сбросить</button>
       </div>
       <div class="progress-bar-wrap">
         <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
@@ -214,7 +214,7 @@
     </div>
 
     <!-- Module cards -->
-    <h2 style="font-size:18px; font-weight:600; margin-bottom:16px; color:var(--text-muted);">Модули</h2>
+    <h2 style="font-size:var(--fs-lg); font-weight:700; margin-bottom:20px; color:var(--text-muted);">Модули</h2>
     <div class="module-grid" id="module-grid"></div>
   </main>
 
@@ -303,6 +303,13 @@
         color: "var(--epoch-llm)",
         title: "LLM-эра",
         desc: "Конструктор улучшений: Seq2Seq → Attention → масштаб.",
+      },
+      {
+        path: "/module/4b",
+        epoch: "Галлюцинации",
+        color: "var(--epoch-llm)",
+        title: "Почему нейросети не врут",
+        desc: "5 причин, почему модель всегда «права» — и чем это опасно.",
       },
     ];
 

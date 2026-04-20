@@ -5,31 +5,31 @@
   <title>RNN — LLM Evolution</title>
   <link rel="stylesheet" href="/static/style.css">
   <style>
-    .mode-toggle { display:flex; gap:8px; margin-bottom:20px; }
+    .mode-toggle { display:flex; gap:10px; margin-bottom:20px; }
     .mode-btn {
-      padding:8px 22px; border-radius:var(--radius); border:1px solid var(--border);
-      background:var(--bg-card); color:var(--text-muted); font-size:14px; font-weight:600;
+      padding:10px 26px; border-radius:var(--radius); border:1px solid var(--border);
+      background:var(--bg-card); color:var(--text-muted); font-size:var(--fs-sm); font-weight:600;
       cursor:pointer; transition:background var(--transition),color var(--transition),border-color var(--transition);
     }
     .mode-btn.active { background:var(--epoch-rnn); border-color:var(--epoch-rnn); color:#0d1117; }
     .rnn-svg-wrap { overflow-x:auto; margin:8px 0 4px; }
     .rnn-cell { fill:#1c1f2e; stroke:var(--epoch-rnn); stroke-width:1.5; }
-    .node-label { font-family:"Segoe UI",sans-serif; font-size:11px; fill:var(--epoch-rnn); font-weight:600; }
-    .token-label { font-family:"Segoe UI",sans-serif; font-size:12px; fill:#a5d6ff; }
+    .node-label { font-family:var(--font-body); font-size:var(--fs-xs); fill:var(--epoch-rnn); font-weight:600; }
+    .token-label { font-family:var(--font-body); font-size:var(--fs-xs); fill:#a5d6ff; }
     .arr { fill:none; stroke:#30363d; stroke-width:1.5; marker-end:url(#arr); }
     .arr-h { fill:none; stroke:var(--epoch-rnn); stroke-width:1.8; marker-end:url(#arrH); }
     @keyframes fp { 0%,100%{stroke-opacity:.3} 50%{stroke-opacity:1} }
     .anim { animation:fp 1.2s ease-in-out infinite; }
-    .gen-token { display:inline-block; padding:2px 8px; border-radius:4px; margin:2px 3px; font-size:15px; transition:background .25s,color .25s; }
+    .gen-token { display:inline-block; padding:4px 10px; border-radius:4px; margin:2px 4px; font-size:var(--fs-base); transition:background .25s,color .25s; }
     .gen-token.active { background:rgba(168,85,247,.3); color:var(--epoch-rnn); font-weight:700; }
     .gen-token.done { background:rgba(168,85,247,.08); color:var(--text); }
     .gen-token.seed { background:rgba(255,255,255,.06); color:var(--text-muted); }
-    .unrolled-live { overflow-x:auto; margin-top:14px; background:var(--bg); border-radius:var(--radius); border:1px solid var(--border); padding:10px 6px 6px; min-height:116px; display:flex; align-items:center; justify-content:flex-start; }
+    .unrolled-live { overflow-x:auto; margin-top:16px; background:var(--bg); border-radius:var(--radius); border:1px solid var(--border); padding:14px 10px 10px; min-height:120px; display:flex; align-items:center; justify-content:flex-start; }
     .unrolled-live svg { display:block; overflow:visible; }
-    .unrolled-placeholder { color:var(--text-muted); font-size:13px; padding:8px 12px; }
-    .word-input { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); padding:8px 12px; font-size:14px; width:160px; outline:none; transition:border-color .2s; }
+    .unrolled-placeholder { color:var(--text-muted); font-size:var(--fs-sm); padding:10px 14px; }
+    .word-input { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); padding:10px 14px; font-size:var(--fs-sm); width:180px; outline:none; transition:border-color .2s; font-family:var(--font-body); }
     .word-input:focus { border-color:var(--epoch-rnn); }
-    .controls-row { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+    .controls-row { display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin-bottom:20px; }
   </style>
 </head>
 <body>
@@ -41,13 +41,13 @@
     <!-- Architecture diagram -->
     <div class="card">
       <div class="card-title" id="diagram-title">Архитектура RNN
-        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">hidden state
+        <span class="term" style="margin-left:10px;font-size:var(--fs-sm);font-weight:400;color:var(--text-muted);">hidden state
           <button class="hint-btn" data-hint="Hidden state — ‘рабочая память’ сети. Передаётся от шага к шагу как эстафетная палочка. Но палочка маленькая — много не унесёт.">?</button>
         </span>
       </div>
       <!-- RNN SVG -->
       <div class="rnn-svg-wrap" id="svg-rnn">
-        <svg class="diagram-svg" viewBox="0 0 700 182" xmlns="http://www.w3.org/2000/svg">
+        <svg class="diagram-svg" viewBox="0 0 700 210" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <marker id="arr"    markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#30363d"/></marker>
             <marker id="arrH"   markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#A855F7"/></marker>
@@ -58,45 +58,45 @@
           <!-- ── EXPANDED CELL ── -->
 
           <!-- h_{t-1} from left (INPUT — blue) -->
-          <text x="44" y="91" font-family="Segoe UI" font-size="12" fill="#a5d6ff" text-anchor="middle" font-weight="600">h_{t-1}</text>
-          <text x="44" y="104" font-family="Segoe UI" font-size="10" fill="#a5d6ff" text-anchor="middle" opacity="0.5">память</text>
+          <text x="44" y="78" font-family="Manrope, system-ui, sans-serif" font-size="14" fill="#a5d6ff" text-anchor="middle" font-weight="600">h_{t-1}</text>
+          <text x="44" y="118" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#a5d6ff" text-anchor="middle" opacity="0.5">память</text>
           <line x1="82" y1="96" x2="272" y2="96" fill="none" stroke="#a5d6ff" stroke-width="1.8" marker-end="url(#arrX)"/>
-          <text x="177" y="90" font-family="Segoe UI" font-size="10" fill="#A855F7" text-anchor="middle" opacity="0.3">Wh · h</text>
+          <text x="177" y="84" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#A855F7" text-anchor="middle" opacity="0.3">Wh · h</text>
 
           <!-- Cell box -->
           <rect x="236" y="56" width="200" height="82" rx="8" class="rnn-cell"/>
 
           <!-- ⊕ node (сумматор) -->
           <circle cx="286" cy="97" r="12" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5" opacity="0.3"/>
-          <text x="286" y="102" font-family="Segoe UI" font-size="14" fill="#A855F7" text-anchor="middle" opacity="0.3">⊕</text>
+          <text x="286" y="102" font-family="Manrope, system-ui, sans-serif" font-size="16" fill="#A855F7" text-anchor="middle" opacity="0.3">⊕</text>
 
           <!-- x_t from below into ⊕ (INPUT — blue) -->
-          <line x1="286" y1="168" x2="286" y2="110" fill="none" stroke="#a5d6ff" stroke-width="1.8" marker-end="url(#arrX)"/>
-          <text x="302" y="163" font-family="Segoe UI" font-size="12" fill="#a5d6ff">x_t</text>
-          <text x="302" y="145" font-family="Segoe UI" font-size="10" fill="#A855F7" opacity="0.3">Wx · x</text>
+          <line x1="286" y1="185" x2="286" y2="110" fill="none" stroke="#a5d6ff" stroke-width="1.8" marker-end="url(#arrX)"/>
+          <text x="302" y="180" font-family="Manrope, system-ui, sans-serif" font-size="14" fill="#a5d6ff">x_t</text>
+          <text x="302" y="158" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#A855F7" opacity="0.3">Wx · x</text>
 
           <!-- ⊕ → tanh (inside cell) -->
           <line x1="298" y1="97" x2="318" y2="97" fill="none" stroke="#A855F7" stroke-width="1.5" marker-end="url(#arrH)" opacity="0.3"/>
 
           <!-- tanh box -->
           <rect x="322" y="83" width="52" height="28" rx="5" fill="#1c1f2e" stroke="#A855F7" stroke-width="1.5" opacity="0.3"/>
-          <text x="348" y="101" font-family="Segoe UI" font-size="12" fill="#A855F7" text-anchor="middle" opacity="0.3">tanh</text>
+          <text x="348" y="101" font-family="Manrope, system-ui, sans-serif" font-size="14" fill="#A855F7" text-anchor="middle" opacity="0.3">tanh</text>
 
           <!-- h_t exits cell, then branches (OUTPUT — green) -->
           <line x1="374" y1="97" x2="408" y2="97" fill="none" stroke="#3fb950" stroke-width="1.8" opacity="0.4"/>
           <circle cx="410" cy="97" r="3.5" fill="#3fb950"/>
           <!-- → next step -->
           <line x1="410" y1="97" x2="616" y2="97" fill="none" stroke="#3fb950" stroke-width="1.8" marker-end="url(#arrOut)" class="anim"/>
-          <text x="512" y="90" font-family="Segoe UI" font-size="12" fill="#3fb950" text-anchor="middle">h_t</text>
-          <text x="512" y="103" font-family="Segoe UI" font-size="10" fill="#3fb950" text-anchor="middle" opacity="0.5">новая память</text>
+          <text x="512" y="78" font-family="Manrope, system-ui, sans-serif" font-size="14" fill="#3fb950" text-anchor="middle">h_t</text>
+          <text x="512" y="118" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#3fb950" text-anchor="middle" opacity="0.5">новая память</text>
           <!-- → y(next) upward -->
           <line x1="410" y1="93" x2="410" y2="27" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#arrOut)"/>
-          <text x="424" y="62" font-family="Segoe UI" font-size="10" fill="#A855F7" opacity="0.3">W_out</text>
+          <text x="424" y="62" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#A855F7" opacity="0.3">W_out</text>
           <rect x="376" y="8" width="68" height="20" rx="4" fill="var(--bg-hover)" stroke="#3fb950" stroke-width="1"/>
-          <text x="410" y="22" font-family="Segoe UI" font-size="11" fill="#3fb950" text-anchor="middle">y (next)</text>
+          <text x="410" y="22" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#3fb950" text-anchor="middle">y (next)</text>
 
           <!-- Formula + description -->
-          <text x="350" y="178" font-family="Segoe UI" font-size="11" fill="#A855F7" text-anchor="middle" opacity="0.25">h_t = tanh( Wh·h_{t-1} + Wx·x_t ) — одни и те же веса W на каждом шаге</text>
+          <text x="350" y="203" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#A855F7" text-anchor="middle" opacity="0.25">h_t = tanh( Wh·h_{t-1} + Wx·x_t ) — одни и те же веса W на каждом шаге</text>
 
         </svg>
       </div>
@@ -106,7 +106,7 @@
     <!-- Hidden size slider -->
     <div class="card">
       <div class="card-title">Слайдер ёмкости
-        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">hidden size
+        <span class="term" style="margin-left:10px;font-size:var(--fs-sm);font-weight:400;color:var(--text-muted);">hidden size
           <button class="hint-btn" data-hint="Hidden size — сколько ‘ячеек’ в рабочей памяти. Больше ячеек = больше деталей может удержать.">?</button>
         </span>
       </div>
@@ -114,7 +114,7 @@
         <span class="slider-label">Hidden =</span>
         <input type="range" id="hidden-size" min="0" max="3" value="1" step="1">
         <span class="slider-value" id="hidden-size-val">8</span>
-        <span style="font-size:13px;color:var(--text-muted);margin-left:8px;">нейронов в слое</span>
+        <span style="font-size:var(--fs-xs);color:var(--text-muted);margin-left:10px;">нейронов в слое</span>
       </div>
     </div>
 
@@ -122,22 +122,22 @@
     <div class="card">
       <div class="card-title">Генерация</div>
       <div class="controls-row">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:14px;color:var(--text-muted);">Начать со слова:</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:var(--fs-sm);color:var(--text-muted);">Начать со слова:</span>
           <input type="text" id="start-word" class="word-input" value="кот" list="corpus-words">
           <datalist id="corpus-words"></datalist>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:14px;color:var(--text-muted);">Слов:</span>
-          <input type="range" id="words-count" min="1" max="20" value="5" step="1" style="width:80px;">
-          <span id="words-count-val" style="font-size:14px;font-weight:600;min-width:20px;">5</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:var(--fs-sm);color:var(--text-muted);">Слов:</span>
+          <input type="range" id="words-count" min="1" max="20" value="5" step="1" style="width:100px;">
+          <span id="words-count-val" style="font-size:var(--fs-sm);font-weight:600;min-width:24px;">5</span>
         </div>
         <button class="btn btn-primary" id="generate-btn">▶ Генерировать</button>
       </div>
       <div class="result-box" id="generation-result" style="min-height:52px;line-height:2;">
         <span style="color:var(--text-muted);">Нажмите «Генерировать»</span>
       </div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:10px;margin-bottom:2px;">Развёртка сети в реальном времени:</div>
+      <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:12px;margin-bottom:4px;">Развёртка сети в реальном времени:</div>
       <div id="unrolled-wrap" class="unrolled-live">
         <span class="unrolled-placeholder">← здесь появится развёртка после генерации</span>
       </div>
@@ -146,7 +146,7 @@
     <!-- Problem callout -->
     <div class="card">
       <div class="card-title">Проблема RNN: затухающий градиент
-        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">vanishing gradient
+        <span class="term" style="margin-left:10px;font-size:var(--fs-sm);font-weight:400;color:var(--text-muted);">vanishing gradient
           <button class="hint-btn" data-hint="Градиент — сигнал обратной связи при обучении. Когда он проходит через много шагов — затухает как эхо в длинном коридоре.">?</button>
         </span>
       </div>
@@ -178,26 +178,20 @@
     wordsSlider.addEventListener("input", () => { wordsVal.textContent = wordsSlider.value; });
 
     // ── Unrolled diagram ───────────────────────────────────────────────────────
-    const U_CELL_W = 68, U_GAP = 48, U_STEP = 116;
-    const U_IO_X_IN  = 18;  // x offset for input connection point (left third of cell)
-    const U_IO_X_OUT = 50;  // x offset for output connection point (right third of cell)
+    const U_CELL_W = 100, U_GAP = 50, U_STEP = 150;
+    const U_IO_X_IN  = 24;  // x offset for input connection point (left third of cell)
+    const U_IO_X_OUT = 76;  // x offset for output connection point (right third of cell)
+    const U_FONT      = 16; // font size inside cells and labels
     // Vertical layout:
-    //   seed word label  y=10  (blue, above h1 only)
-    //   seed arrow tip   y=15  → cell top
-    //   cell top         y=19
-    //   cell center      y=32  (h-arrow level)
-    //   cell bottom      y=45
-    //   L-path dip       y=62  (horizontal segment of output→next-input path)
-    //   word label       y=74  (below horizontal, centered between cells)
-    const U_SEED_TEXT_Y = 9;
-    const U_SEED_ARR_BOT = 10;
-    const U_CELL_Y      = 30;
-    const U_CELL_H      = 26;
-    const U_ARROW_Y     = U_CELL_Y + U_CELL_H / 2;  // 43
-    const U_CELL_BOTTOM = U_CELL_Y + U_CELL_H;       // 56
-    const U_DIP         = 72;   // y of horizontal segment
-    const U_OUT_TEXT_Y  = 84;;   // word label y
-    const U_SVG_H       = 96;;
+    const U_SEED_TEXT_Y = 14;
+    const U_SEED_ARR_BOT = 18;
+    const U_CELL_Y      = 36;
+    const U_CELL_H      = 38;
+    const U_ARROW_Y     = U_CELL_Y + U_CELL_H / 2;  // 55
+    const U_CELL_BOTTOM = U_CELL_Y + U_CELL_H;       // 74
+    const U_DIP         = 94;   // y of horizontal segment
+    const U_OUT_TEXT_Y  = 110;  // word label y
+    const U_SVG_H       = 124;
 
     function escSvg(s) {
       return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -244,7 +238,7 @@
         // ── Seed input ABOVE first cell (blue) ────────────────────────────────
         if (i === 0) {
           parts.push(`<text x="${mid}" y="${U_SEED_TEXT_Y}"
-            font-family="Segoe UI" font-size="11" fill="${xColor}" text-anchor="middle"
+            font-family="Manrope, system-ui, sans-serif" font-size="${U_FONT}" fill="${xColor}" text-anchor="middle"
             font-weight="600" opacity="${op}">${escSvg(visible[0])}</text>`);
           parts.push(`<line x1="${mid}" y1="${U_SEED_ARR_BOT}" x2="${mid}" y2="${U_CELL_Y - 1}"
             stroke="${xColor}" stroke-width="1.5" marker-end="url(#uX)" opacity="${op}"/>`);
@@ -253,8 +247,8 @@
         // ── Cell rect + label ─────────────────────────────────────────────────
         parts.push(`<rect x="${cx}" y="${U_CELL_Y}" width="${U_CELL_W}" height="${U_CELL_H}"
           rx="5" fill="#1c1f2e" stroke="${hColor}" stroke-width="${sw}" opacity="${op}"/>`);
-        parts.push(`<text x="${mid}" y="${U_CELL_Y + U_CELL_H / 2 + 4}"
-          font-family="Segoe UI" font-size="11" fill="${hColor}" text-anchor="middle"
+        parts.push(`<text x="${mid}" y="${U_CELL_Y + U_CELL_H / 2 + 6}"
+          font-family="Manrope, system-ui, sans-serif" font-size="${U_FONT}" fill="${hColor}" text-anchor="middle"
           font-weight="600" opacity="${op}">${isLstm ? "h·c" : "h" + (i + 1)}</text>`);
 
         // ── h context arrow to next cell ──────────────────────────────────────
@@ -277,7 +271,7 @@
           parts.push(`<line x1="${stubX}" y1="${U_ARROW_Y}" x2="${cx - 2}" y2="${U_ARROW_Y}"
             stroke="${hColor}" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.35"/>`);
           parts.push(`<text x="${stubX - 4}" y="${U_ARROW_Y + 4}"
-            font-family="Segoe UI" font-size="9" fill="${hColor}" text-anchor="middle" opacity="0.35">h₀</text>`);
+            font-family="Manrope, system-ui, sans-serif" font-size="${U_FONT - 2}" fill="${hColor}" text-anchor="middle" opacity="0.35">h₀</text>`);
         }
 
         // ── Output: L-path to next cell, or downward stub for last cell ───────
@@ -297,14 +291,14 @@
               fill="none" stroke="${oColor}" stroke-width="1.5"
               marker-end="url(#uO)" opacity="${outOp}"/>`);
             parts.push(`<text x="${labelX}" y="${U_OUT_TEXT_Y}"
-              font-family="Segoe UI" font-size="11" fill="${oColor}" text-anchor="middle"
+              font-family="Manrope, system-ui, sans-serif" font-size="${U_FONT}" fill="${oColor}" text-anchor="middle"
               font-weight="600" opacity="${outOp}">${escSvg(outWord)}</text>`);
           } else {
             // Last cell: short downward stub with word (or "?")
             parts.push(`<line x1="${outX}" y1="${U_CELL_BOTTOM + 1}" x2="${outX}" y2="${U_DIP}"
               stroke="${oColor}" stroke-width="1.5" marker-end="url(#uO)" opacity="${outOp}"/>`);
             parts.push(`<text x="${outX}" y="${U_OUT_TEXT_Y}"
-              font-family="Segoe UI" font-size="11" fill="${oColor}" text-anchor="middle"
+              font-family="Manrope, system-ui, sans-serif" font-size="${U_FONT}" fill="${oColor}" text-anchor="middle"
               font-weight="600" opacity="${outOp}">${escSvg(outWord ?? "?")}</text>`);
           }
         }
@@ -354,7 +348,7 @@
 
       if (fallbackInfo) {
         const note = document.createElement("div");
-        note.style.cssText = "font-size:12px;color:var(--text-muted);margin-top:6px;";
+        note.style.cssText = "font-size:14px;color:var(--text-muted);margin-top:8px;";
         note.textContent = fallbackInfo;
         resultEl.appendChild(note);
       }

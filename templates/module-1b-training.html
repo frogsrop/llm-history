@@ -8,15 +8,15 @@
     /* ── Mode toggle (same as RNN page) ───────────────── */
     .mode-toggle { display:flex; gap:8px; margin-bottom:20px; }
     .mode-btn {
-      padding:8px 22px; border-radius:var(--radius); border:1px solid var(--border);
-      background:var(--bg-card); color:var(--text-muted); font-size:14px; font-weight:600;
+      padding:10px 28px; border-radius:var(--radius); border:1px solid var(--border);
+      background:var(--bg-card); color:var(--text-muted); font-size:var(--fs-sm); font-weight:600;
       cursor:pointer; transition:background var(--transition),color var(--transition),border-color var(--transition);
     }
     .mode-btn.active { background:var(--accent); border-color:var(--accent); color:#0d1117; }
 
     /* ── Column layout ────────────────────────────────── */
     .train-column {
-      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-family: var(--font-mono);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -25,7 +25,7 @@
     }
 
     .formula-header {
-      font-size: 16px;
+      font-size: var(--fs-base);
       color: var(--text-muted);
       margin-bottom: 20px;
       letter-spacing: 1px;
@@ -47,17 +47,17 @@
       gap: 8px;
       width: 100%;
     }
-    .calc-row.small { font-size: 22px; }
+    .calc-row.small { font-size: var(--fs-lg); }
     .calc-label {
-      font-size: 13px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
       margin-right: auto;
       align-self: center;
     }
     .calc-op {
       color: var(--text-muted);
-      font-size: 20px;
-      width: 20px;
+      font-size: var(--fs-base);
+      width: 24px;
       text-align: center;
     }
     .calc-val { min-width: 80px; text-align: right; }
@@ -95,16 +95,16 @@
       margin-top: 28px;
     }
     .eps-btn {
-      padding: 14px 36px;
+      padding: 16px 40px;
       border-radius: var(--radius);
       border: 1px solid var(--border);
       background: var(--bg-card);
       color: var(--text);
-      font-size: 20px;
+      font-size: var(--fs-lg);
       font-weight: 700;
       cursor: pointer;
       transition: background var(--transition), border-color var(--transition);
-      font-family: monospace;
+      font-family: var(--font-mono);
     }
     .eps-btn:hover { background: var(--bg-hover); border-color: var(--accent); }
     .eps-btn:active { background: var(--accent); color: #0d1117; }
@@ -121,9 +121,9 @@
     .weight-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-family: monospace;
-      font-size: 15px;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: var(--fs-sm);
     }
     .weight-name {
       color: var(--text-muted);
@@ -137,16 +137,16 @@
       text-align: right;
     }
     .w-btn {
-      padding: 6px 14px;
+      padding: 8px 16px;
       border-radius: var(--radius);
       border: 1px solid var(--border);
       background: var(--bg-card);
       color: var(--text);
-      font-size: 16px;
+      font-size: var(--fs-base);
       font-weight: 700;
       cursor: pointer;
       transition: background var(--transition), border-color var(--transition);
-      font-family: monospace;
+      font-family: var(--font-mono);
     }
     .w-btn:hover { background: var(--bg-hover); border-color: var(--accent); }
     .w-btn:active { background: var(--accent); color: #0d1117; }
@@ -155,8 +155,8 @@
     .eps-selector {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 14px;
+      gap: 10px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
     }
     .eps-selector select {
@@ -164,9 +164,9 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       color: var(--text);
-      padding: 6px 10px;
-      font-size: 14px;
-      font-family: monospace;
+      padding: 8px 12px;
+      font-size: var(--fs-sm);
+      font-family: var(--font-mono);
       outline: none;
     }
     .meta-row {
@@ -176,14 +176,14 @@
       gap: 16px;
       margin-top: 14px;
     }
-    .step-counter { font-size: 13px; color: var(--text-muted); }
+    .step-counter { font-size: var(--fs-sm); color: var(--text-muted); }
     .reset-btn {
-      padding: 6px 14px;
+      padding: 8px 16px;
       border-radius: var(--radius);
       border: 1px solid var(--border);
       background: var(--bg-card);
       color: var(--text-muted);
-      font-size: 12px;
+      font-size: var(--fs-xs);
       cursor: pointer;
       transition: background var(--transition), border-color var(--transition);
     }
@@ -191,9 +191,9 @@
 
     .loss-display { text-align: center; margin: 12px 0; }
     .loss-value {
-      font-size: 28px;
+      font-size: var(--fs-xl);
       font-weight: 700;
-      font-family: monospace;
+      font-family: var(--font-mono);
       transition: color 0.3s;
     }
     .loss-history {
@@ -242,7 +242,7 @@
       <div class="card" style="padding:28px 24px;">
         <div style="display:flex; align-items:center; justify-content:center; gap:24px; flex-wrap:wrap;">
           <!-- Neuron SVG -->
-          <svg id="lin-neuron" viewBox="0 0 440 160" style="width:440px; height:160px; flex-shrink:0;">
+          <svg id="lin-neuron" viewBox="0 0 440 160" style="width:100%; max-width:540px; height:auto; flex-shrink:0;">
             <!-- x node -->
             <circle cx="70" cy="80" r="50" fill="var(--bg)" stroke="var(--text-muted)" stroke-width="3"/>
             <text x="70" y="68" text-anchor="middle" fill="var(--text-muted)" font-size="18">x</text>
@@ -259,7 +259,7 @@
           </svg>
           <!-- Example card -->
           <div style="background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius);
-                      padding:14px 22px; font-family:monospace; font-size:16px; line-height:1.8;">
+                      padding:16px 24px; font-family:var(--font-mono); font-size:var(--fs-base); line-height:1.8;">
             <div>x = <strong style="color:var(--text);" id="v-x">2.0</strong></div>
             <div>y = <strong style="color:#3fb950;" id="v-true">4.0</strong></div>
           </div>
@@ -268,7 +268,7 @@
 
       <!-- ── Error line ────────────────────────────────── -->
       <div class="card" style="padding:20px 24px; text-align:center;">
-        <div style="font-family:monospace; font-size:26px; letter-spacing:1px;">
+        <div style="font-family:var(--font-mono); font-size:var(--fs-xl); letter-spacing:1px;">
           <span style="color:var(--accent);">ŷ</span>
           <span style="color:var(--text-muted);"> &minus; </span>
           <span style="color:#3fb950;">y</span>
@@ -284,10 +284,10 @@
       <!-- ── Controls: −ε  w  +ε ───────────────────────── -->
       <div class="card" style="padding:20px 24px;">
         <div style="display:flex; align-items:center; justify-content:center; gap:20px;">
-          <button class="eps-btn" id="lin-btn-minus" style="font-size:22px; padding:16px 38px;">&minus; e</button>
-          <div style="text-align:center; font-family:monospace;">
-            <div style="font-size:13px; color:var(--text-muted);">w</div>
-            <div style="font-size:28px; font-weight:700; color:#a78bfa;" id="v-w">0.50</div>
+          <button class="eps-btn" id="lin-btn-minus">&minus; e</button>
+          <div style="text-align:center; font-family:var(--font-mono);">
+            <div style="font-size:var(--fs-sm); color:var(--text-muted);">w</div>
+            <div style="font-size:var(--fs-xl); font-weight:700; color:#a78bfa;" id="v-w">0.50</div>
             <div class="eps-selector" style="margin-top:6px;">
               <label for="lin-eps">&epsilon; =</label>
               <select id="lin-eps">
@@ -299,7 +299,7 @@
               </select>
             </div>
           </div>
-          <button class="eps-btn" id="lin-btn-plus" style="font-size:22px; padding:16px 38px;">+ e</button>
+          <button class="eps-btn" id="lin-btn-plus">+ e</button>
         </div>
         <div class="meta-row" style="margin-top:16px;">
           <div class="step-counter">Пример #<strong id="lin-step">1</strong></div>
@@ -309,9 +309,9 @@
 
       <div class="card">
         <div class="card-title">График</div>
-        <div style="display:flex; gap:16px; font-size:13px; padding:0 0 6px 4px;">
-          <span><span style="display:inline-block;width:20px;height:3px;background:#3fb950;vertical-align:middle;border-top:2px dashed #3fb950;"></span> y = 2x</span>
-          <span><span style="display:inline-block;width:20px;height:3px;background:#f59e0b;vertical-align:middle;"></span> модель: y = <span id="lin-legend-w">0.50</span>x</span>
+        <div style="display:flex; gap:20px; font-size:var(--fs-sm); padding:0 0 8px 4px;">
+          <span><span style="display:inline-block;width:24px;height:3px;background:#3fb950;vertical-align:middle;border-top:2px dashed #3fb950;"></span> y = 2x</span>
+          <span><span style="display:inline-block;width:24px;height:3px;background:#f59e0b;vertical-align:middle;"></span> модель: y = <span id="lin-legend-w">0.50</span>x</span>
         </div>
         <div class="viz-wrap">
           <svg id="lin-svg" width="100%" height="280" viewBox="0 0 500 280"></svg>
@@ -324,7 +324,7 @@
           <div class="loss-value" id="lin-loss">&mdash;</div>
         </div>
         <div class="loss-history" id="lin-loss-bars"></div>
-        <p style="font-size:12px; color:var(--text-muted); text-align:center;">Ошибка на каждом примере (последние 50)</p>
+        <p style="font-size:var(--fs-xs); color:var(--text-muted); text-align:center;">Ошибка на каждом примере (последние 50)</p>
       </div>
 
       <div class="callout">
@@ -348,17 +348,17 @@
       <div class="card">
         <div class="train-column">
           <!-- Prediction summary -->
-          <div style="display:flex; gap:32px; justify-content:center; font-family:monospace; font-size:18px;">
+          <div style="display:flex; gap:40px; justify-content:center; font-family:var(--font-mono); font-size:var(--fs-lg);">
             <div style="text-align:center;">
-              <div style="font-size:16px; color:var(--text-muted);">y&#x302;</div>
+              <div style="font-size:var(--fs-base); color:var(--text-muted);">y&#x302;</div>
               <div style="color:var(--accent); font-weight:700;" id="nn-pred">0.00</div>
             </div>
             <div style="text-align:center;">
-              <div style="font-size:16px; color:var(--text-muted);">y</div>
+              <div style="font-size:var(--fs-base); color:var(--text-muted);">y</div>
               <div style="color:#3fb950; font-weight:700;" id="nn-true">0.00</div>
             </div>
             <div style="text-align:center;">
-              <div style="font-size:16px; color:var(--text-muted);">y&#x302; &minus; y</div>
+              <div style="font-size:var(--fs-base); color:var(--text-muted);">y&#x302; &minus; y</div>
               <div class="val-err" id="nn-err" style="font-weight:700;">0.00</div>
             </div>
           </div>
@@ -398,11 +398,11 @@
                 <option value="128">128</option>
               </select>
             </div>
-            <button class="eps-btn" id="nn-grad-step" style="padding:10px 28px; background:#3fb950; border-color:#3fb950; color:#0d1117;">Grad step &rarr;</button>
+            <button class="eps-btn" id="nn-grad-step" style="padding:12px 32px; background:#3fb950; border-color:#3fb950; color:#0d1117;">Grad step &rarr;</button>
           </div>
           <div class="meta-row" style="margin-top:10px;">
             <div class="step-counter">Пример #<strong id="nn-step">1</strong></div>
-            <span style="font-size:12px; color:var(--text-muted);">Весов: <strong id="nn-nweights">14</strong></span>
+            <span style="font-size:var(--fs-xs); color:var(--text-muted);">Весов: <strong id="nn-nweights">14</strong></span>
             <button class="reset-btn" id="nn-reset">Сбросить</button>
           </div>
         </div>
@@ -410,9 +410,9 @@
 
       <div class="card">
         <div class="card-title">График</div>
-        <div style="display:flex; gap:16px; font-size:13px; padding:0 0 6px 4px;">
-          <span><span style="display:inline-block;width:20px;height:3px;background:#3fb950;vertical-align:middle;border-top:2px dashed #3fb950;"></span> y = (x⁴/5 + 4x³) / 1000</span>
-          <span><span style="display:inline-block;width:20px;height:3px;background:#f59e0b;vertical-align:middle;"></span> модель</span>
+        <div style="display:flex; gap:20px; font-size:var(--fs-sm); padding:0 0 8px 4px;">
+          <span><span style="display:inline-block;width:24px;height:3px;background:#3fb950;vertical-align:middle;border-top:2px dashed #3fb950;"></span> y = (x⁴/5 + 4x³) / 1000</span>
+          <span><span style="display:inline-block;width:24px;height:3px;background:#f59e0b;vertical-align:middle;"></span> модель</span>
         </div>
         <div class="viz-wrap">
           <svg id="nn-svg" width="100%" height="300" viewBox="0 0 500 300"></svg>
@@ -425,7 +425,7 @@
           <div class="loss-value" id="nn-loss">&mdash;</div>
         </div>
         <div class="loss-history" id="nn-loss-bars"></div>
-        <p style="font-size:12px; color:var(--text-muted); text-align:center;">MSE по батчам, лог-шкала (последние 50)</p>
+        <p style="font-size:var(--fs-xs); color:var(--text-muted); text-align:center;">MSE по батчам, лог-шкала (последние 50)</p>
       </div>
 
       <div class="callout">
@@ -536,11 +536,11 @@
     // Grid
     for (let i = 0; i <= 6; i++) {
       s += `<line x1="${sx(i)}" y1="${pad.top}" x2="${sx(i)}" y2="${H - pad.bottom}" stroke="var(--border)" stroke-width="0.5"/>`;
-      s += `<text x="${sx(i)}" y="${H - pad.bottom + 18}" text-anchor="middle" fill="var(--text-muted)" font-size="11">${i}</text>`;
+      s += `<text x="${sx(i)}" y="${H - pad.bottom + 18}" text-anchor="middle" fill="var(--text-muted)" font-size="14">${i}</text>`;
     }
     for (let i = 0; i <= 12; i += 2) {
       s += `<line x1="${pad.left}" y1="${sy(i)}" x2="${W - pad.right}" y2="${sy(i)}" stroke="var(--border)" stroke-width="0.5"/>`;
-      s += `<text x="${pad.left - 8}" y="${sy(i) + 4}" text-anchor="end" fill="var(--text-muted)" font-size="11">${i}</text>`;
+      s += `<text x="${pad.left - 8}" y="${sy(i) + 4}" text-anchor="end" fill="var(--text-muted)" font-size="14">${i}</text>`;
     }
     s += `<line x1="${pad.left}" y1="${H - pad.bottom}" x2="${W - pad.right}" y2="${H - pad.bottom}" stroke="var(--text-muted)" stroke-width="1"/>`;
     s += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${H - pad.bottom}" stroke="var(--text-muted)" stroke-width="1"/>`;
@@ -572,8 +572,8 @@
     if (yP >= 0 && yP <= yMax)
       s += `<circle cx="${sx(d.x)}" cy="${sy(yP)}" r="6" fill="#f59e0b" stroke="var(--bg)" stroke-width="1.5"/>`;
 
-    s += `<text x="${W / 2}" y="${H - 4}" text-anchor="middle" fill="var(--text-muted)" font-size="12">x</text>`;
-    s += `<text x="14" y="${H / 2}" text-anchor="middle" fill="var(--text-muted)" font-size="12" transform="rotate(-90,14,${H / 2})">y</text>`;
+    s += `<text x="${W / 2}" y="${H - 4}" text-anchor="middle" fill="var(--text-muted)" font-size="14">x</text>`;
+    s += `<text x="14" y="${H / 2}" text-anchor="middle" fill="var(--text-muted)" font-size="14" transform="rotate(-90,14,${H / 2})">y</text>`;
     svg.innerHTML = s;
   }
 
@@ -811,8 +811,8 @@
 
     // ── Input node (2× size) ──
     s += `<circle cx="${colX[0]}" cy="${svgH / 2}" r="${bigR}" fill="#1c1f2e" stroke="var(--text-muted)" stroke-width="3"/>`;
-    s += `<text x="${colX[0]}" y="${svgH / 2 - 6}" text-anchor="middle" font-family="monospace" font-size="13" fill="var(--text-muted)">x</text>`;
-    s += `<text x="${colX[0]}" y="${svgH / 2 + 12}" text-anchor="middle" font-family="monospace" font-size="18" fill="var(--text)" font-weight="700">${x.toFixed(1)}</text>`;
+    s += `<text x="${colX[0]}" y="${svgH / 2 - 6}" text-anchor="middle" font-size="16" fill="var(--text-muted)">x</text>`;
+    s += `<text x="${colX[0]}" y="${svgH / 2 + 14}" text-anchor="middle" font-size="22" fill="var(--text)" font-weight="700">${x.toFixed(1)}</text>`;
 
     // ── Hidden layer nodes ──
     const layerColors = ["var(--epoch-rnn)", "var(--epoch-embeddings)", "var(--epoch-ngram)", "var(--epoch-llm)", "var(--accent)"];
@@ -829,15 +829,15 @@
     // ── Output node (2× size) ──
     const outCol = colX[NLAYERS + 1];
     s += `<circle cx="${outCol}" cy="${svgH / 2}" r="${bigR}" fill="#1c1f2e" stroke="var(--accent)" stroke-width="3"/>`;
-    s += `<text x="${outCol}" y="${svgH / 2 - 6}" text-anchor="middle" font-family="monospace" font-size="13" fill="var(--text-muted)">ŷ</text>`;
-    s += `<text x="${outCol}" y="${svgH / 2 + 12}" text-anchor="middle" font-family="monospace" font-size="18" fill="var(--accent)" font-weight="700">${yP.toFixed(2)}</text>`;
+    s += `<text x="${outCol}" y="${svgH / 2 - 6}" text-anchor="middle" font-size="16" fill="var(--text-muted)">ŷ</text>`;
+    s += `<text x="${outCol}" y="${svgH / 2 + 14}" text-anchor="middle" font-size="22" fill="var(--accent)" font-weight="700">${yP.toFixed(2)}</text>`;
 
     // ── Column labels ──
-    s += `<text x="${colX[0]}" y="${svgH - 2}" text-anchor="middle" font-size="14" fill="var(--text-muted)">x</text>`;
+    s += `<text x="${colX[0]}" y="${svgH - 2}" text-anchor="middle" font-size="16" fill="var(--text-muted)">x</text>`;
     for (let l = 0; l < NLAYERS; l++) {
-      s += `<text x="${colX[l + 1]}" y="${svgH - 2}" text-anchor="middle" font-size="14" fill="var(--text-muted)">${l + 1}</text>`;
+      s += `<text x="${colX[l + 1]}" y="${svgH - 2}" text-anchor="middle" font-size="16" fill="var(--text-muted)">${l + 1}</text>`;
     }
-    s += `<text x="${outCol}" y="${svgH - 2}" text-anchor="middle" font-size="14" fill="var(--text-muted)">ŷ</text>`;
+    s += `<text x="${outCol}" y="${svgH - 2}" text-anchor="middle" font-size="16" fill="var(--text-muted)">ŷ</text>`;
 
     svg.innerHTML = s;
   }
@@ -893,11 +893,11 @@
 
     for (let i = -20; i <= 20; i += 10) {
       s += `<line x1="${sx(i)}" y1="${pad.top}" x2="${sx(i)}" y2="${H - pad.bottom}" stroke="var(--border)" stroke-width="0.5"/>`;
-      s += `<text x="${sx(i)}" y="${H - pad.bottom + 18}" text-anchor="middle" fill="var(--text-muted)" font-size="11">${i}</text>`;
+      s += `<text x="${sx(i)}" y="${H - pad.bottom + 18}" text-anchor="middle" fill="var(--text-muted)" font-size="14">${i}</text>`;
     }
     for (let i = 0; i <= 70; i += 10) {
       s += `<line x1="${pad.left}" y1="${sy(i)}" x2="${W - pad.right}" y2="${sy(i)}" stroke="var(--border)" stroke-width="0.5"/>`;
-      s += `<text x="${pad.left - 6}" y="${sy(i) + 4}" text-anchor="end" fill="var(--text-muted)" font-size="10">${i}</text>`;
+      s += `<text x="${pad.left - 6}" y="${sy(i) + 4}" text-anchor="end" fill="var(--text-muted)" font-size="14">${i}</text>`;
     }
     s += `<line x1="${pad.left}" y1="${H - pad.bottom}" x2="${W - pad.right}" y2="${H - pad.bottom}" stroke="var(--text-muted)" stroke-width="1"/>`;
     s += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${H - pad.bottom}" stroke="var(--text-muted)" stroke-width="1"/>`;
@@ -921,8 +921,8 @@
     s += `<path d="${mpath}" fill="none" stroke="#f59e0b" stroke-width="2.5"/>`;
 
 
-    s += `<text x="${W / 2}" y="${H - 4}" text-anchor="middle" fill="var(--text-muted)" font-size="12">x</text>`;
-    s += `<text x="14" y="${H / 2}" text-anchor="middle" fill="var(--text-muted)" font-size="12" transform="rotate(-90,14,${H / 2})">y</text>`;
+    s += `<text x="${W / 2}" y="${H - 4}" text-anchor="middle" fill="var(--text-muted)" font-size="14">x</text>`;
+    s += `<text x="14" y="${H / 2}" text-anchor="middle" fill="var(--text-muted)" font-size="14" transform="rotate(-90,14,${H / 2})">y</text>`;
     svg.innerHTML = s;
   }
 

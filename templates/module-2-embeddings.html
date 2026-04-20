@@ -12,7 +12,7 @@
     }
     #word-canvas {
       width: 100%;
-      height: 520px;
+      height: 720px;
       cursor: grab;
     }
     #word-canvas.grabbing { cursor: grabbing; }
@@ -20,8 +20,8 @@
       position: absolute;
       top: 8px;
       right: 8px;
-      padding: 4px 10px;
-      font-size: 12px;
+      padding: 6px 14px;
+      font-size: var(--fs-xs);
       border-radius: var(--radius);
       border: 1px solid var(--border);
       background: var(--bg-card);
@@ -35,9 +35,9 @@
     .map-legend {
       display: flex;
       flex-wrap: wrap;
-      gap: 14px;
-      margin-top: 10px;
-      font-size: 12px;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: var(--fs-xs);
       color: var(--text-muted);
     }
     .map-legend-item {
@@ -53,20 +53,20 @@
     /* ── Analogy input ───────────────────────────────────── */
     .analogy-wrap {
       display: flex;
-      gap: 10px;
+      gap: 14px;
       align-items: center;
       flex-wrap: wrap;
-      margin: 12px 0;
+      margin: 16px 0;
     }
     #analogy-input {
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       color: var(--text);
-      font-size: 15px;
-      padding: 8px 14px;
+      font-size: var(--fs-base);
+      padding: 10px 16px;
       flex: 1;
-      min-width: 200px;
+      min-width: 280px;
       outline: none;
       transition: border-color var(--transition);
     }
@@ -74,12 +74,12 @@
 
     .example-btn {
       display: inline-block;
-      padding: 5px 12px;
+      padding: 6px 14px;
       border-radius: var(--radius);
       border: 1px solid var(--border);
       background: var(--bg-card);
       color: var(--text-muted);
-      font-size: 13px;
+      font-size: var(--fs-sm);
       cursor: pointer;
       transition: border-color var(--transition), color var(--transition);
     }
@@ -95,23 +95,23 @@
     .analogy-result-word {
       color: var(--epoch-embeddings);
       font-weight: 700;
-      font-size: 18px;
+      font-size: var(--fs-lg);
     }
     .analogy-score {
       color: var(--text-muted);
-      font-size: 13px;
+      font-size: var(--fs-sm);
       margin-left: 8px;
     }
     .top5-list {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
-      margin-top: 8px;
+      margin-top: 10px;
     }
     .top5-item {
-      font-size: 13px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
-      padding: 3px 8px;
+      padding: 4px 10px;
       border: 1px solid var(--border);
       border-radius: 4px;
     }
@@ -124,11 +124,11 @@
       margin-top: 16px;
     }
     .compare-col h4 {
-      font-size: 14px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
       margin-bottom: 10px;
     }
-    .index-table td { font-family: monospace; font-size: 13px; }
+    .index-table td { font-family: var(--font-mono); font-size: var(--fs-sm); }
     .index-table td:first-child { color: var(--epoch-embeddings); font-weight: 600; }
     .index-table td:last-child { color: var(--text-muted); }
 
@@ -139,7 +139,7 @@
       justify-content: center;
       height: 300px;
       color: var(--text-muted);
-      font-size: 16px;
+      font-size: var(--fs-base);
     }
     .loading-overlay.hidden { display: none; }
   </style>
@@ -155,11 +155,11 @@
     <!-- Idea card -->
     <div class="card">
       <div class="card-title">Идея
-        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">word embedding
+        <span class="term" style="margin-left:8px;font-size:var(--fs-sm);font-weight:400;color:var(--text-muted);">word embedding
           <button class="hint-btn" data-hint="Эмбеддинг — это когда каждое слово становится точкой в многомерном пространстве. Близкие по смыслу слова оказываются рядом, как города на карте.">?</button>
         </span>
       </div>
-      <p style="color:var(--text-muted);font-size:14px;line-height:1.7;">
+      <p style="color:var(--text-muted);font-size:var(--fs-sm);line-height:1.7;">
         Раньше для компьютера слова были просто номерами: «кот» = 5, «собака» = 12 — никакой связи.
         <strong style="color:var(--text);">Word2Vec</strong> превращает каждое слово в вектор из 300 чисел.
         Близкие по смыслу слова получают похожие векторы — и это позволяет делать арифметику смыслов.
@@ -169,7 +169,7 @@
     <!-- 2D Word Map -->
     <div class="card">
       <div class="card-title">Карта слов
-        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">UMAP проекция
+        <span class="term" style="margin-left:8px;font-size:var(--fs-sm);font-weight:400;color:var(--text-muted);">UMAP проекция
           <button class="hint-btn" data-hint="300-мерное пространство сжато до 2D для визуализации. Расстояния приблизительные, но кластеры сохраняются.">?</button>
         </span>
       </div>
@@ -186,7 +186,7 @@
     <!-- Analogy arithmetic -->
     <div class="card">
       <div class="card-title">Арифметика смыслов
-        <span class="term" style="margin-left:8px;font-size:14px;font-weight:400;color:var(--text-muted);">vector arithmetic
+        <span class="term" style="margin-left:8px;font-size:var(--fs-sm);font-weight:400;color:var(--text-muted);">vector arithmetic
           <button class="hint-btn" data-hint="Если из вектора «король» вычесть «мужчина» и прибавить «женщина», получится вектор ближе всего к «королева». Смысл кодируется как направление в пространстве.">?</button>
         </span>
       </div>
@@ -195,7 +195,7 @@
         <button class="btn btn-primary" id="analogy-btn">= ?</button>
       </div>
       <div style="margin-bottom:12px;">
-        <span style="font-size:12px;color:var(--text-muted);">Примеры:</span>
+        <span style="font-size:var(--fs-xs);color:var(--text-muted);">Примеры:</span>
         <button class="example-btn" data-expr="король - мужчина + женщина">король − мужчина + женщина</button>
         <button class="example-btn" data-expr="кот - он + она">кот − он + она</button>
         <button class="example-btn" data-expr="Москва - Россия + Франция">Москва − Россия + Франция</button>
@@ -217,7 +217,7 @@
             <tr><td>король</td><td>→ 3</td></tr>
             <tr><td>королева</td><td>→ 4</td></tr>
           </table>
-          <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">Числа случайные. «Кот» и «собака» так же далеки, как «кот» и «король».</p>
+          <p style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:8px;">Числа случайные. «Кот» и «собака» так же далеки, как «кот» и «король».</p>
         </div>
         <div class="compare-col">
           <h4>После: векторы близости</h4>
@@ -227,7 +227,7 @@
             <tr><td>король</td><td>→ [0.71, 0.55, −0.12, …]</td></tr>
             <tr><td>королева</td><td>→ [0.68, 0.62, −0.09, …]</td></tr>
           </table>
-          <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">Близкие по смыслу слова — близкие векторы. Арифметика работает!</p>
+          <p style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:8px;">Близкие по смыслу слова — близкие векторы. Арифметика работает!</p>
         </div>
       </div>
     </div>
@@ -290,7 +290,7 @@
     function resizeCanvas() {
       const rect = canvas.parentElement.getBoundingClientRect();
       canvas.width = rect.width;
-      canvas.height = 520;
+      canvas.height = 720;
     }
 
     // World coords [0,1] → canvas pixel coords (with zoom & pan applied)
@@ -341,8 +341,8 @@
       ctx.putImageData(imgData, 0, 0);
 
       // Phase 2: draw curated dots + highlighted word + analogy result with canvas API
-      const fontSize = Math.max(10, Math.min(16, 12 * scale));
-      const fontBold = Math.max(11, Math.min(18, 13 * scale));
+      const fontSize = Math.max(14, Math.min(22, 16 * scale));
+      const fontBold = Math.max(16, Math.min(26, 18 * scale));
       const showFrequentLabels = scale >= 8;
 
       // If a frequent word is highlighted, draw it
@@ -378,8 +378,8 @@
         const showLabel = isHighlight || isResult || isCurated;
         if (showLabel) {
           ctx.font = (isHighlight || isResult)
-            ? `bold ${fontBold.toFixed(0)}px Segoe UI`
-            : `${fontSize.toFixed(0)}px Segoe UI`;
+            ? `bold ${fontBold.toFixed(0)}px Manrope, system-ui, sans-serif`
+            : `${fontSize.toFixed(0)}px Manrope, system-ui, sans-serif`;
           ctx.fillStyle = isHighlight || isResult ? "#fff" : color;
           ctx.globalAlpha = isHighlight || isResult ? 1 : 0.85;
           ctx.textAlign = "center";
@@ -390,7 +390,7 @@
 
       // Phase 3: labels for frequent words when zoomed in far enough
       if (showFrequentLabels) {
-        ctx.font = `${fontSize.toFixed(0)}px Segoe UI`;
+        ctx.font = `${fontSize.toFixed(0)}px Manrope, system-ui, sans-serif`;
         ctx.fillStyle = GROUP_COLORS.frequent;
         ctx.globalAlpha = 0.6;
         ctx.textAlign = "center";

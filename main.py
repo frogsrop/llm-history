@@ -78,6 +78,11 @@ async def module_llm(request: Request):
     return templates.TemplateResponse("module-4-llm-era.html", {"request": request})
 
 
+@app.get("/module/4b", response_class=HTMLResponse)
+async def module_hallucinations(request: Request):
+    return templates.TemplateResponse("module-4b-hallucinations.html", {"request": request})
+
+
 @app.get("/module/5", response_class=HTMLResponse)
 async def module_compare(request: Request):
     return templates.TemplateResponse("module-5-compare.html", {"request": request})

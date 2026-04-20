@@ -16,17 +16,17 @@
       vertical-align: middle;
       transition: width 0.3s ease;
     }
-    .prob-value { font-size: 12px; color: var(--text-muted); margin-left: 6px; }
+    .prob-value { font-weight: 700; color: var(--text-muted); margin-left: 6px; }
     td.next-word { font-weight: 600; color: var(--epoch-ngram); min-width: 100px; }
-    td.context-key { font-family: monospace; font-size: 13px; color: var(--text-muted); }
+    td.context-key { font-family: monospace; font-weight: 700; color: var(--text-muted); }
 
     /* ── Generation result ──────────────────────────────── */
     .gen-token {
       display: inline-block;
-      padding: 2px 8px;
+      padding: 4px 10px;
       border-radius: 4px;
-      margin: 2px 3px;
-      font-size: 15px;
+      margin: 3px 4px;
+      font-size: var(--fs-sm);
       transition: background 0.25s, color 0.25s;
     }
     .gen-token.active {
@@ -49,9 +49,9 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       color: var(--text);
-      padding: 8px 12px;
-      font-size: 14px;
-      width: 160px;
+      padding: 10px 14px;
+      font-size: var(--fs-sm);
+      width: 200px;
       outline: none;
       transition: border-color 0.2s;
     }
@@ -61,28 +61,28 @@
     .controls-row {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 20px;
       flex-wrap: wrap;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     /* ── Probability Graph Panel (fixed, right of main content) ── */
     .graph-panel {
       position: fixed;
-      left: calc(var(--sidebar-width) + 960px + 16px);
+      left: calc(var(--sidebar-width) + var(--content-max-width) + 16px);
       top: 0;
       right: 0;
       bottom: 0;
       overflow: hidden;
       background: rgba(255,255,255,0.03);
       border-left: 1px solid var(--border);
-      padding: 16px 18px;
+      padding: 20px 22px;
       z-index: 50;
       display: flex;
       flex-direction: column;
     }
     .graph-panel-title {
-      font-size: 12px;
+      font-size: var(--fs-xs);
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -95,7 +95,7 @@
       align-items: center;
       justify-content: center;
       color: var(--text-muted);
-      font-size: 13px;
+      font-size: var(--fs-xs);
     }
     /* highlight selected row in table */
     tbody tr.selected td { background: rgba(74,158,255,0.07); }
@@ -124,7 +124,7 @@
   <!-- Probability graph — fixed in the empty space to the right of main content -->
   <div class="graph-panel" id="graph-panel">
     <div class="graph-panel-title">Граф Маркова</div>
-    <div class="graph-placeholder" style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px 0;">Загрузка…</div>
+    <div class="graph-placeholder" style="color:var(--text-muted);font-size:var(--fs-xs);text-align:center;padding:24px 0;">Загрузка…</div>
   </div>
 
   <main id="main-content">
@@ -137,7 +137,7 @@
     <div class="card">
       <div class="card-title">
         Обучающий корпус
-        <span class="term" style="margin-left:8px; font-size:14px; font-weight:400; color:var(--text-muted);">
+        <span class="term" style="margin-left:8px; font-size:var(--fs-sm); font-weight:400; color:var(--text-muted);">
           корпус
           <button class="hint-btn" data-hint="Корпус — набор текстов, на которых 'учится' модель. Как список примеров для ученика.">?</button>
         </span>
@@ -149,7 +149,7 @@
     <div class="card">
       <div class="card-title">
         Таблица переходов
-        <span class="term" style="margin-left:8px; font-size:14px; font-weight:400; color:var(--text-muted);">
+        <span class="term" style="margin-left:8px; font-size:var(--fs-sm); font-weight:400; color:var(--text-muted);">
           N-gram
           <button class="hint-btn" data-hint="N-gram — это N слов подряд. Bigram = пара слов. Модель запоминает: 'после слова X обычно идёт слово Y'.">?</button>
         </span>
@@ -159,11 +159,11 @@
         <span class="slider-label">N =</span>
         <input type="range" id="ngram-order" min="1" max="5" value="2" step="1">
         <span class="slider-value" id="ngram-order-val">2</span>
-        <span style="font-size:13px; color:var(--text-muted); margin-left:4px;" id="ngram-order-label">(Bigram)</span>
+        <span style="font-size:var(--fs-xs); color:var(--text-muted); margin-left:4px;" id="ngram-order-label">(Bigram)</span>
       </div>
 
       <div id="table-container">
-        <div style="color:var(--text-muted); font-size:14px;">Загрузка таблицы…</div>
+        <div style="color:var(--text-muted); font-size:var(--fs-sm);">Загрузка таблицы…</div>
       </div>
     </div>
 
@@ -173,16 +173,16 @@
 
       <div class="controls-row">
         <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:14px; color:var(--text-muted);">Начать со слова:</span>
+          <span style="font-size:var(--fs-sm); color:var(--text-muted);">Начать со слова:</span>
           <input type="text" id="start-word" class="word-input" value="кот" list="corpus-words">
           <datalist id="corpus-words"></datalist>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:14px; color:var(--text-muted);">Слов:</span>
-          <input type="range" id="words-count" min="1" max="10" value="5" step="1" style="width:80px;">
-          <span id="words-count-val" style="font-size:14px; font-weight:600; min-width:20px;">5</span>
+          <span style="font-size:var(--fs-sm); color:var(--text-muted);">Слов:</span>
+          <input type="range" id="words-count" min="1" max="10" value="5" step="1" style="width:100px;">
+          <span id="words-count-val" style="font-size:var(--fs-sm); font-weight:600; min-width:24px;">5</span>
         </div>
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:14px; color:var(--text-muted);">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:var(--fs-sm); color:var(--text-muted);">
           <input type="checkbox" id="greedy-toggle">
           Самое вероятное слово
         </label>
@@ -198,7 +198,7 @@
     <div class="card">
       <div class="card-title">
         Проблема N-gram
-        <span class="term" style="margin-left:8px; font-size:14px; font-weight:400; color:var(--text-muted);">
+        <span class="term" style="margin-left:8px; font-size:var(--fs-sm); font-weight:400; color:var(--text-muted);">
           контекстное окно
           <button class="hint-btn" data-hint="Контекстное окно — сколько слов назад модель 'помнит'. У N-gram это N−1 слов. Дальше — полная амнезия.">?</button>
         </span>
@@ -243,9 +243,9 @@
 
         el.innerHTML = sentences.map(s =>
           `<span class="corpus-sentence">` +
-          `<span style="color:var(--text-muted);font-size:12px;opacity:0.7;">&lt;s&gt;</span> ` +
+          `<span style="color:var(--text-muted);font-size:var(--fs-xs);opacity:0.7;">&lt;s&gt;</span> ` +
           `${s} ` +
-          `<span style="color:var(--text-muted);font-size:12px;opacity:0.7;">&lt;/s&gt;</span>` +
+          `<span style="color:var(--text-muted);font-size:var(--fs-xs);opacity:0.7;">&lt;/s&gt;</span>` +
           `</span>`
         ).join("");
 
@@ -642,13 +642,13 @@
       panel.innerHTML = `
         <div class="graph-panel-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <span>Граф Маркова (N=${n})${n > 1 && selectedCtx ? ' · ' + selectedCtx : ''}</span>
-          ${hasChanges ? `<button id="graph-reset-btn" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-muted);cursor:pointer;">↺ Сброс</button>` : ''}
+          ${hasChanges ? `<button id="graph-reset-btn" style="font-size:var(--fs-xs);padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-muted);cursor:pointer;">↺ Сброс</button>` : ''}
         </div>
         <svg viewBox="${pan.x.toFixed(1)} ${pan.y.toFixed(1)} ${(SZ*zoom).toFixed(1)} ${(SZ*zoom).toFixed(1)}" xmlns="http://www.w3.org/2000/svg"
              style="flex:1;width:100%;height:100%;cursor:grab;" preserveAspectRatio="xMidYMid meet">
           ${defs}${edgesSvg}${nodesSvg}${cpSvg}
         </svg>
-        <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0 0;flex-shrink:0;">
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);text-align:center;padding:4px 0 0;flex-shrink:0;">
           ${count} вершин · ${allEdges.length} рёбер
         </div>`;
 
@@ -737,7 +737,7 @@
             const btn = document.createElement('button');
             btn.id = 'graph-reset-btn';
             btn.textContent = '↺ Сброс';
-            btn.style.cssText = 'font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-muted);cursor:pointer;';
+            btn.style.cssText = 'font-size:var(--fs-xs);padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-muted);cursor:pointer;';
             btn.addEventListener('click', () => {
               nodeArr.forEach(id => delete userPos[`${n}:${id}`]);
               delete graphPan[n];
@@ -899,7 +899,7 @@
     async function loadTable(n) {
       const version = ++_loadVersion;
       const container = document.getElementById("table-container");
-      container.innerHTML = `<div style="color:var(--text-muted); font-size:14px;">Загрузка…</div>`;
+      container.innerHTML = `<div style="color:var(--text-muted); font-size:var(--fs-sm);">Загрузка…</div>`;
 
       try {
         const data = await apiFetch(`/api/ngram/table?n=${n}`);
@@ -986,7 +986,7 @@
 
         if (truncated) {
           const note = document.createElement("div");
-          note.style.cssText = "margin-top:8px; font-size:12px; color:var(--text-muted);";
+          note.style.cssText = "margin-top:8px; font-size:var(--fs-xs); color:var(--text-muted);";
           note.textContent = `Показано ${maxRows} из ${entries.length} записей`;
           container.appendChild(note);
         }
@@ -1077,7 +1077,7 @@
 
         if (data.fallback_used) {
           const note = document.createElement("div");
-          note.style.cssText = "font-size:12px; color:var(--text-muted); margin-top:6px;";
+          note.style.cssText = "font-size:var(--fs-xs); color:var(--text-muted); margin-top:6px;";
           note.textContent = `Слово "${start}" не найдено в корпусе, использован: "${actualStart}"`;
           resultEl.appendChild(note);
         }

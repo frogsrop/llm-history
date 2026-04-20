@@ -14,6 +14,7 @@ const MODULES = [
   { path: "/module/2", label: "Embeddings",      epoch: "embeddings" },
   { path: "/module/3", label: "RNN",              epoch: "rnn" },
   { path: "/module/4", label: "LLM Era",         epoch: "llm" },
+  { path: "/module/4b", label: "Галлюцинации",   epoch: "llm" },
 ];
 
 const STORAGE_KEY = "llm_explainer_visited";
@@ -123,15 +124,13 @@ function renderSidebar() {
   // Seed control
   const seedSection = document.createElement("div");
   seedSection.id = "sidebar-seed-section";
-  seedSection.style.cssText = "margin-top:20px; padding-top:16px; border-top:1px solid var(--border);";
+  seedSection.className = "sidebar-section";
   seedSection.innerHTML = `
-    <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Seed</div>
-    <div style="display:flex; align-items:center; gap:6px;">
+    <div class="sidebar-section-label">Seed</div>
+    <div class="sidebar-seed-row">
       <input type="number" id="global-seed" value="${getSeed()}" min="-1"
-             style="width:68px; background:var(--bg); border:1px solid var(--border);
-                    border-radius:var(--radius); color:var(--text); padding:5px 8px;
-                    font-size:13px; outline:none; text-align:center; flex-shrink:0;">
-      <span style="font-size:11px; color:var(--text-muted);">-1=rand</span>
+             class="sidebar-seed-input">
+      <span class="sidebar-seed-hint">-1=rand</span>
     </div>
   `;
   sidebar.appendChild(seedSection);
@@ -142,15 +141,15 @@ function renderSidebar() {
 
   // Animation speed
   const speedSection = document.createElement("div");
-  speedSection.style.cssText = "margin-top:16px; padding-top:16px; border-top:1px solid var(--border);";
+  speedSection.className = "sidebar-section";
   speedSection.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-      <span style="font-size:12px; color:var(--text-muted);">Animation speed</span>
-      <span id="sidebar-speed-label" style="font-size:12px; color:var(--text-muted);">400ms</span>
+    <div class="sidebar-speed-header">
+      <span class="sidebar-section-label" style="margin-bottom:0;">Animation speed</span>
+      <span id="sidebar-speed-label" class="sidebar-speed-value">400ms</span>
     </div>
     <input type="range" id="sidebar-speed" min="50" max="1500" step="50" value="${window.animDelay ?? 400}"
            style="width:100%; accent-color:var(--accent);">
-    <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:2px;">
+    <div class="sidebar-speed-hints">
       <span>Fast</span><span>Slow</span>
     </div>
   `;
